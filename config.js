@@ -7,4 +7,7 @@ export const SUPABASE_KEY = "sb_publishable_z_JmCe9P8RyKz_-0zZtEOQ_OKcTryro";
 // 2. URLパラメータの解析
 const urlParams = new URLSearchParams(window.location.search);
 export const roomId = urlParams.get('room'); 
-export const role = urlParams.get('role');
+
+// 🚀【変更点】URLに role=host が明示されていない場合は、すべて「guest」として扱う
+const rawRole = urlParams.get('role');
+export const role = (rawRole === 'host') ? 'host' : 'guest';
