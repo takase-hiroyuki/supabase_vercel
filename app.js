@@ -1,22 +1,16 @@
 // app.js
 
-// config.js と storage.js から必要な部品をインポート
+// 必要な部品を各ファイルからインポート
 import { roomId, role } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
+import { insertParticipant } from './supabase.js'; // ⭕Supabase通信関数をインポート
 
-// 1. 【開通確認用】URL解析・記憶テストの表示（タイムスタンプ「0605」）
+// 1. 【開通確認用】（タイムスタンプ「0730」に更新）
 const debugDiv = document.createElement('div');
 debugDiv.style.padding = '5px';
 debugDiv.style.background = '#e2f0d9';
-debugDiv.innerHTML = `【連動確認】部屋ID: ${roomId || '未指定'}, 役割: ${role || '未指定'} (0605)`;
+debugDiv.innerHTML = `【連動確認】部屋ID: ${roomId || '未指定'}, 役割: ${role || '未指定'} (0730)`;
 document.body.insertBefore(debugDiv, document.body.firstChild);
-
-const savedData = getFromStorage('test_time');
-const storageDiv = document.createElement('div');
-storageDiv.style.padding = '5px';
-storageDiv.style.background = '#fff2cc';
-storageDiv.innerHTML = `【記憶テスト】ポケットから取り出したデータ: <b>${savedData}</b>`;
-document.body.insertBefore(storageDiv, document.body.firstChild);
 
 // 2. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const sectionLogin = document.getElementById('section-login');
@@ -35,19 +29,45 @@ if (role === 'host') {
     document.getElementById('guest-room-id').textContent = roomId || "未指定";
 }
 
-// 4. 【新規追加】「入室する」ボタンが押された時の動き
-btnLogin.addEventListener('click', () => {
-    const username = inputUsername.value.trim(); // 入力された名前を取得（前後の空白を削除）
+// 4. 「入室する」ボタンが押された時の動き
+btnLogin.addEventListener('click', async () => {
+    const username = inputUsername.value.trim();
     
     if (!username) {
         alert('名前を入力してください！');
         return;
     }
     
-    // 倉庫番（storage.js）を使って、入力された名前を記憶ポケットに保存する
+    // プレイヤー固有のユーザーIDを記憶ポケットから取得、なければ新規作成
+    let userId = getFromStorage('user_id');
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substring(2, 11);
+        saveToStorage('user_id', userId); // 記憶ポケットに保存
+    }
+    
+    // プレイヤー名を記憶ポケットに保存
     saveToStorage('player_name', username);
     
-    // ちゃんと保存できたか、アラートで確認してみる
-    const checkName = getFromStorage('player_name');
-    alert(`記憶ポケットに「${checkName}」を保存しました！`);
+    try {
+        // ボタンを連打できないように一時的に無効化
+        btnLogin.disabled = true;
+        btnLogin.textContent = '入室処理中...';
+        
+        // 🚀【本番】Supabaseの「participants」テーブルにデータを送信！
+        await insertParticipant(roomId, username, userId);
+        
+        alert(`Supabaseへの送信が成功しました！\nプレイヤー名: ${username}\nID: ${userId}`);
+        
+        // 送信が成功したら、ログイン画面を隠して「参加者画面（ステータス）」を表示する
+        sectionLogin.style.display = 'none';
+        sectionGuest.style.display = 'block';
+        document.getElementById('guest-name').textContent = username;
+        document.getElementById('guest-role').textContent = '一般（入室済み）';
+        
+    } catch (error) {
+        alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
+        // エラー時はボタンを元に戻す
+        btnLogin.disabled = false;
+        btnLogin.textContent = '入室する';
+    }
 });
