@@ -1,1 +1,61 @@
-<h1>Hello Github and Vercel</h1>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div id="display">A OFF, B OFF</div>
+    
+    <p>
+        私は: 
+        <label><input type="radio" name="user_select" value="A" checked> Aさん</label>
+        <label><input type="radio" name="user_select" value="B"> Bさん</label>
+    </p>
+    
+    <button id="action-btn">ボタン</button>
+
+    <script>
+        const SUPABASE_URL = "https://iasdvzfswkfstscsdlfd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_z_JmCe9P8RyKz_-0zZtEOQ_OKcTryro";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const display = document.getElementById('display');
+        const btn = document.getElementById('action-btn');
+
+        let currentState = { A: "OFF", B: "OFF" };
+
+        function getCurrentUser() {
+            return document.querySelector('input[name="user_select"]:checked').value;
+        }
+
+        const channel = supabaseClient.channel('room_1', {
+            config: { broadcast: { self: true } }
+        });
+
+        channel.on('broadcast', { event: 'btn_state' }, (payload) => {
+            const data = payload.payload;
+            currentState[data.user] = data.status;
+            display.textContent = `A ${currentState.A}, B ${currentState.B}`;
+        }).subscribe();
+
+        function sendStatus(status) {
+            const user = getCurrentUser();
+            channel.send({
+                type: 'broadcast',
+                event: 'btn_state',
+                payload: { user: user, status: status }
+            });
+        }
+
+        btn.addEventListener('mousedown', () => sendStatus("ON"));
+        btn.addEventListener('mouseup', () => sendStatus("OFF"));
+        btn.addEventListener('mouseleave', () => sendStatus("OFF"));
+        
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); sendStatus("ON"); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); sendStatus("OFF"); });
+    </script>
+</body>
+</html>
