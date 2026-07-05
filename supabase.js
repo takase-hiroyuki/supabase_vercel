@@ -39,3 +39,43 @@ export async function insertParticipant(roomId, username, userId) {
     
     return data;
 }
+
+
+/**
+ * リアルタイムで参加者リストの変更を監視し、描画関数を実行する関数
+ * @param {string} targetRoomId - 監視する部屋ID
+ * @param {function} onUpdate - データ更新時に実行する描画関数
+ */
+export function subscribeToParticipants(targetRoomId, onUpdate) {
+    // 1. 最初の一回、現在テーブルにあるデータを取得して描画に渡す
+    supabaseClient
+        .from('participants')
+        .select('*')
+        .eq('room_id', targetRoomId)
+        .order('id', { ascending: true })
+        .then(({ data, error }) => {
+            if (!error && data) onUpdate(data);
+        });
+
+    // 2. リアルタイム通信を開始して、データの追加や更新を監視する
+    return supabaseClient
+        .channel('public:participants')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'participants' },
+            async (payload) => {
+                console.log("【デバッグ・Realtime受信】変更を検知しました:", payload);
+                // 変更があったので最新のリストを再取得して描画関数に渡す
+                const { data } = await supabaseClient
+                    .from('participants')
+                    .select('*')
+                    .eq('room_id', targetRoomId)
+                    .order('id', { ascending: true });
+                if (data) onUpdate(data);
+            }
+        )
+        .subscribe((status, err) => {
+            console.log("【デバッグ・Realtime状態】接続ステータス:", status);
+            if (err) console.error("【デバッグ・Realtimeエラー】詳細:", err);
+        });
+}
