@@ -3,7 +3,7 @@
 // 必要な部品を各ファイルからインポート
 import { roomId, role } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
-import { insertParticipant } from './supabase.js';
+import { insertParticipant, subscribeToParticipants } from './supabase.js';
 
 // 1. 【開通確認用】（タイムスタンプ「0736」に更新）
 const debugDiv = document.createElement('div');
@@ -74,3 +74,30 @@ btnLogin.addEventListener('click', async () => {
         btnLogin.textContent = '入室する';
     }
 });
+
+
+// 5. ホスト画面用のリアルタイムデータ監視とテーブル描画
+if (role === 'host') {
+    const listBody = document.getElementById('host-participant-list');
+
+    // データを画面のテーブル（tbody）に組み立てて出力する関数
+    const updateParticipantTable = (participants) => {
+        console.log("【デバッグ】テーブル描画処理が走りました。データ件数:", participants.length);
+        listBody.innerHTML = ''; // 一旦クリア
+
+        participants.forEach((p, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${p.name} (${p.user_id})</td>
+                <td>${p.role}</td>
+                <td>（後ほど実装）</td>
+            `;
+            listBody.appendChild(tr);
+        });
+    };
+
+    // リアルタイム監視を開始
+    console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
+    subscribeToParticipants(roomId, updateParticipantTable);
+}
