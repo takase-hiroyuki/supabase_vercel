@@ -24,10 +24,18 @@ export async function insertParticipant(roomId, username, userId) {
                 role: '一般' // 最初は全員「一般」からスタート
             }
         ]);
-
+    
     if (error) {
         console.error('Supabase送信エラー:', error);
+        // 【追記デバッグコード】エラーの具体的な中身をテキスト出力
+        console.log("【デバッグ・エラー詳細】メッセージ:", error.message);
+        console.log("【デバッグ・エラー詳細】コード:", error.code);
+        console.log("【デバッグ・エラー詳細】詳細:", error.details);
         throw error;
+    } else {
+        // 【追記デバッグコード】成功時の確認
+        console.log("【デバッグ・成功】insertParticipant が正常に完了しました。返ってきたデータ:", data);
     }
+    
     return data;
 }
