@@ -80,21 +80,5 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
         });
 }
 
-/**
- * 指定された部屋IDの参加者データをすべて削除（リセット）する関数
- * @param {string} targetRoomId - リセットする部屋ID
- */
-export async function clearRoomParticipants(targetRoomId) {
-    const { data, error } = await supabaseClient
-        .from('participants')
-        .delete()
-        .eq('room_id', targetRoomId);
 
-    if (error) {
-        console.error('データリセットエラー:', error);
-        throw error;
-    }
-    
-    console.log(`【デバッグ】部屋 ${targetRoomId} のデータをリセットしました。`);
-    return data;
-}
+感情なし。憶測なし。嘘なし。できないことはできないという。
