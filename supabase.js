@@ -79,3 +79,22 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             if (err) console.error("【デバッグ・Realtimeエラー】詳細:", err);
         });
 }
+
+/**
+ * 指定された部屋IDの参加者データをすべて削除（リセット）する関数
+ * @param {string} targetRoomId - リセットする部屋ID
+ */
+export async function clearRoomParticipants(targetRoomId) {
+    const { data, error } = await supabaseClient
+        .from('participants')
+        .delete()
+        .eq('room_id', targetRoomId);
+
+    if (error) {
+        console.error('データリセットエラー:', error);
+        throw error;
+    }
+    
+    console.log(`【デバッグ】部屋 ${targetRoomId} のデータをリセットしました。`);
+    return data;
+}
