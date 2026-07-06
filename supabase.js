@@ -79,3 +79,22 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             if (err) console.error("【デバッグ・Realtimeエラー】詳細:", err);
         });
 }
+
+export async function clearRoomParticipants(targetRoomId) {
+    const { data, error } = await supabaseClient
+        .from('participants')
+        .delete()
+        .eq('room_id', targetRoomId)
+        .select();
+
+    if (error) {
+        alert("ERROR: " + error.message);
+        throw error;
+    }
+    
+    const deleteCount = data ? data.length : 0;
+    alert("COUNT: " + deleteCount);
+    
+    return data;
+}
+
