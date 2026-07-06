@@ -79,6 +79,3 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             if (err) console.error("【デバッグ・Realtimeエラー】詳細:", err);
         });
 }
-
-
-感情なし。憶測なし。嘘なし。できないことはできないという。
