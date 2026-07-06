@@ -3,7 +3,11 @@
 // 必要な部品を各ファイルからインポート
 import { roomId, role } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
-import { insertParticipant, subscribeToParticipants } from './supabase.js';
+import {
+    insertParticipant,
+    subscribeToParticipants,
+    clearRoomParticipants } from './supabase.js';
+
 
 // 1. 【開通確認用】（タイムスタンプ「0736」に更新）
 const debugDiv = document.createElement('div');
@@ -100,4 +104,30 @@ if (role === 'host') {
     // リアルタイム監視を開始
     console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
     subscribeToParticipants(roomId, updateParticipantTable);
+
+    // 部屋データのリセットボタンが押された時の動き
+    const btnClearRoom = document.getElementById('btn-clear-room');
+    if (btnClearRoom) {
+        btnClearRoom.addEventListener('click', async () => {
+            if (!confirm('本当にこの部屋の参加者データをすべてリセットしますか？')) {
+                return;
+            }
+            
+            try {
+                btnClearRoom.disabled = true;
+                btnClearRoom.textContent = 'リセット中...';
+                
+                await clearRoomParticipants(roomId);
+                
+                alert('部屋のデータをリセットしました。');
+            } catch (error) {
+                alert('データのリセットに失敗しました。');
+            } finally {
+                btnClearRoom.disabled = false;
+                btnClearRoom.textContent = '部屋のデータをリセット';
+            }
+        });
+    }
 }
+
+
