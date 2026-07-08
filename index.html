@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Game</title>
+    <title>My Game - 参加者画面</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <h1>My Game 0600</h1>
+    <h1>My Game (ゲスト画面)</h1>
 
-    <div id="section-login" style="display: none;">
+    <div id="section-login">
         <h2>プレイヤー登録</h2>
         <input type="text" id="input-username" placeholder="あなたの名前を入力">
         <button id="btn-login">入室する</button>
     </div>
 
     <div id="section-guest" style="display: none;">
-        <h2>あなたのステータス（参加者画面）</h2>
+        <h2>あなたのステータス</h2>
         <p>部屋ID: <span id="guest-room-id">-</span></p>
         <p>プレイヤー名: <span id="guest-name">-</span></p>
         <div>
@@ -26,25 +26,6 @@
         </div>
     </div>
 
-    <div id="section-host" style="display: none;">
-        <h2>参加者名簿（ホスト画面）</h2>
-        <p>部屋ID: <span id="host-room-id">-</span></p>
-        <button id="btn-clear-room">部屋のデータをリセット</button>
-        
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>入室順</th>
-                    <th>プレイヤー名 (ID)</th>
-                    <th>現在の役割</th>
-                    <th>役割の変更（ホスト権限）</th>
-                </tr>
-            </thead>
-            <tbody id="host-participant-list">
-                </tbody>
-        </table>
-    </div>
-
-    <script type="module" src="app.js"></script>
+    <script type="module" src="guest_app.js"></script>
 </body>
 </html>
