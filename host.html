@@ -5,12 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Game - 管理者画面</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* 3x3のグリッド（格子戸）を作る設定 */
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px 0;
+        }
+        /* 各マスの基本デザイン */
+        .cell {
+            border: 2px solid #333;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+        /* 真ん中の使わないマス */
+        .cell.center {
+            border: none;
+            background-color: transparent;
+        }
+        /* スタートマスの色を変える */
+        .cell.start {
+            background-color: #ffeb3b;
+            font-weight: bold;
+        }
+        /* マスの中に表示されるプレイヤーのコマ */
+        .piece {
+            background-color: #00bcd4;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 2px;
+            font-size: 10px;
+        }
+    </style>
 </head>
 <body>
 
     <h1>My Game - ホスト専用管理画面</h1>
 
     <div id="section-host">
+        <h2>すごろく盤面（リアルタイム）</h2>
+        <!-- 3x3のすごろく盤（プログラムから中身を書き換えるための器） -->
+        <div class="board-container" id="board"></div>
+
         <h2>参加者名簿（ホスト画面）</h2>
         <button id="btn-clear-room">部屋のデータをリセット</button>
         
@@ -19,12 +63,12 @@
                 <tr>
                     <th>入室順</th>
                     <th>プレイヤー名 (ID)</th>
-                    <th>現在の役割</th>
+                    <th>現在の位置（マス）</th>
                     <th>役割の変更（ホスト権限）</th>
                 </tr>
             </thead>
             <tbody id="host-participant-list">
-                </tbody>
+            </tbody>
         </table>
     </div>
 
