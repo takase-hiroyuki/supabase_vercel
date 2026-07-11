@@ -29,7 +29,7 @@
 
         <hr>
 
-        <!-- 🚀最初から配置するサイコロエリア -->
+        <!-- 🚀サイコロエリア（この中のテキストをプログラムで要望の文字列に書き換えます） -->
         <h2>サイコロ</h2>
         <div style="font-size: 24px; margin-bottom: 10px;">
             出目: <span id="guest-dice-result">⚀ (1)</span>
@@ -43,44 +43,44 @@
         <table border="2" cellspacing="5" cellpadding="10">
             <!-- 1行目：左上(3)、上中(2)、右上(1) -->
             <tr height="80">
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-3" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【3】左上</div>
                     <div id="cell-3"></div>
                 </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-2" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【2】上中</div>
                     <div id="cell-2"></div>
                 </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-1" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【1】右上</div>
                     <div id="cell-1"></div>
                 </td>
             </tr>
             <!-- 2行目：左中(4)、真ん中（不使用）、右中(0:スタート) -->
             <tr height="80">
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-4" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【4】左中</div>
                     <div id="cell-4"></div>
                 </td>
                 <td width="80" align="center" valign="middle" bgcolor="#ffffff">
                     <!-- 真ん中の空きマス -->
                 </td>
-                <td width="80" align="center" valign="middle" bgcolor="#ffeb3b">
+                <td id="td-cell-0" width="80" align="center" valign="middle" bgcolor="#ffeb3b">
                     <b>【0】スタート</b>
                     <div id="cell-0"></div>
                 </td>
             </tr>
             <!-- 3行目：左下(5)、下中(6)、右下(7) -->
             <tr height="80">
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-5" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【5】左下</div>
                     <div id="cell-5"></div>
                 </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-6" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【6】下中</div>
                     <div id="cell-6"></div>
                 </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                <td id="td-cell-7" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
                     <div>【7】右下</div>
                     <div id="cell-7"></div>
                 </td>
