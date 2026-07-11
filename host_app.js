@@ -2,11 +2,16 @@
 
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
-import { subscribeToParticipants, clearRoomParticipants } from './supabase.js';
+import { subscribeToParticipants, clearRoomParticipants, subscribeToRoom } from './supabase.js';
 
 // 1. HTMLの各画面エリア・ボタンをプログラムに覚えさせる
 const listBody = document.getElementById('host-participant-list');
 const btnClearRoom = document.getElementById('btn-clear-room');
+const hostDiceMonitor = document.getElementById('host-dice-monitor');
+
+// キャッシュ用の変数
+let latestParticipants = [];
+let currentTurnUserIdCache = null;
 
 /**
  * 画面上のすごろく盤面（各マス）に配置されているコマをすべて消去する関数
@@ -20,15 +25,32 @@ const clearBoardCells = () => {
     }
 };
 
+// 手番の表示を更新する共通関数
+const updateTurnDisplay = () => {
+    if (!hostDiceMonitor) return;
+
+    if (!currentTurnUserIdCache) {
+        hostDiceMonitor.textContent = "手番が設定されていません";
+        return;
+    }
+
+    // 参加者リストの中から現在の手番のIDに一致する人を探す
+    const activePlayer = latestParticipants.find(p => p.user_id === currentTurnUserIdCache);
+    const activePlayerName = activePlayer && activePlayer.state ? activePlayer.state.name : currentTurnUserIdCache;
+
+    // ご要望の文言のみを出力
+    hostDiceMonitor.textContent = `次は ${activePlayerName} の番です`;
+};
+
 // 2. データを画面のテーブル（tbody）およびすごろく盤面に組み立てて出力する関数
 const updateParticipantTable = (participants) => {
     console.log("【デバッグ】テーブル・盤面描画処理が走りました。データ件数:", participants.length);
     
+    latestParticipants = participants; // キャッシュを更新
     listBody.innerHTML = ''; // 名簿を一旦クリア
     clearBoardCells();       // すごろく盤面を一旦クリア
 
     participants.forEach((p, index) => {
-        // 安全にJSONデータ（state）を取り出す。万が一空なら初期値を入れる
         const state = p.state || { name: '未特定', join_order: 0, position: 0, role: '一般' };
 
         // --- A. 名簿テーブルへの描画処理 ---
@@ -45,7 +67,6 @@ const updateParticipantTable = (participants) => {
         const targetCellId = `cell-${state.position ?? 0}`;
         const cell = document.getElementById(targetCellId);
         if (cell) {
-            // マスの中にプレイヤーの名前を表示する小さな枠（コマ）を作成
             const piece = document.createElement('div');
             piece.style.backgroundColor = '#00bcd4';
             piece.style.color = 'white';
@@ -58,11 +79,20 @@ const updateParticipantTable = (participants) => {
             cell.appendChild(piece);
         }
     });
+
+    // 参加者情報が更新されたら手番表示も再計算する
+    updateTurnDisplay();
 };
 
 // 3. リアルタイム監視を開始
 console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
 subscribeToParticipants(roomId, updateParticipantTable);
+
+// 💡 部屋（手番情報）の変更をリアルタイム監視
+subscribeToRoom(roomId, (currentTurnUserId) => {
+    currentTurnUserIdCache = currentTurnUserId; // 手番IDをキャッシュに保存
+    updateTurnDisplay(); // 表示を更新
+});
 
 // 4. 部屋データのリセットボタンが押された時の動き
 if (btnClearRoom) {
@@ -75,7 +105,6 @@ if (btnClearRoom) {
             btnClearRoom.disabled = true;
             btnClearRoom.textContent = 'リセット中...';
             
-            // データベースのデータを削除
             await clearRoomParticipants(roomId);
             
             alert('部屋のデータをリセットしました。');
