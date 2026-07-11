@@ -66,6 +66,9 @@ function startMonitoring(myUserId) {
     let latestParticipants = []; // 最新の参加者リストを記憶しておく変数
     let currentTurnUserIdCache = null; // 最新の手番IDを記憶しておく変数
 
+    // サイコロの出目テキストが表示されている親のdiv要素を取得
+    const diceContainer = guestDiceResult.parentElement;
+
     // 他人のIDからユーザー名を探して手番表示を更新する共通処理
     const updateTurnDisplay = () => {
         if (!currentTurnUserIdCache) return;
@@ -73,6 +76,12 @@ function startMonitoring(myUserId) {
         if (currentTurnUserIdCache === myUserId) {
             guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
             btnRollDice.disabled = false;
+            
+            // 💡自分がサイコロを振れるときは、エリアの背景色を薄い黄色（#fff9c4）にする
+            if (diceContainer) {
+                diceContainer.style.backgroundColor = '#fff9c4';
+                diceContainer.style.padding = '10px';
+            }
         } else {
             // 参加者リストの中から、現在の手番のIDに一致する人を探す
             const activePlayer = latestParticipants.find(p => p.user_id === currentTurnUserIdCache);
@@ -81,6 +90,12 @@ function startMonitoring(myUserId) {
             
             guestDiceResult.textContent = `現在は、${activePlayerName} の番です`;
             btnRollDice.disabled = true;
+            
+            // 💡他人の手番のときは背景色を透明（なし）に戻す
+            if (diceContainer) {
+                diceContainer.style.backgroundColor = 'transparent';
+                diceContainer.style.padding = '0px';
+            }
         }
     };
 
