@@ -3,35 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Game - 管理者画面</title>
+    <title>My Game - 参加者画面</title>
+    <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <h1>My Game - ホスト専用管理画面</h1>
+    <h1>My Game (ゲスト画面)</h1>
 
-    <div id="section-host">
+    <!-- 1. プレイヤー登録（ログイン）エリア -->
+    <div id="section-login">
+        <h2>プレイヤー登録</h2>
+        <input type="text" id="input-username" placeholder="あなたの名前を入力">
+        <button id="btn-login">入室する</button>
+    </div>
+
+    <!-- 2. あなたのステータス表示エリア（入室後に表示） -->
+    <div id="section-guest" style="display: none;">
+        <h2>あなたのステータス</h2>
+        <p>部屋ID: <span id="guest-room-id">-</span></p>
+        <p>プレイヤー名: <span id="guest-name">-</span></p>
+        <div>
+            現在の役割: <span id="guest-role">確認中...</span>
+        </div>
+
+        <hr>
+
+        <!-- スタイルシートを使わず、HTMLの属性だけで3x3の盤面を表現 -->
         <h2>すごろく盤面（リアルタイム）</h2>
-        <!-- スタイルシートの代わりに、後ほど JavaScript から直接見た目を整えます -->
-        <div id="board"></div>
-
-        <h2>参加者名簿（ホスト画面）</h2>
-        <button id="btn-clear-room">部屋のデータをリセット</button>
-        
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>入室順</th>
-                    <th>プレイヤー名 (ID)</th>
-                    <th>現在の位置（マス）</th>
-                    <th>役割の変更（ホスト権限）</th>
-                </tr>
-            </thead>
-            <tbody id="host-participant-list">
-            </tbody>
+        <table border="2" cellspacing="5" cellpadding="10">
+            <!-- 1行目：左上(3)、上中(2)、右上(1) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【3】左上</div>
+                    <div id="cell-3"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【2】上中</div>
+                    <div id="cell-2"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【1】右上</div>
+                    <div id="cell-1"></div>
+                </td>
+            </tr>
+            <!-- 2行目：左中(4)、真ん中（不使用）、右中(0:スタート) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【4】左中</div>
+                    <div id="cell-4"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#ffffff">
+                    <!-- 真ん中の空きマス -->
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#ffeb3b">
+                    <b>【0】スタート</b>
+                    <div id="cell-0"></div>
+                </td>
+            </tr>
+            <!-- 3行目：左下(5)、下中(6)、右下(7) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【5】左下</div>
+                    <div id="cell-5"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【6】下中</div>
+                    <div id="cell-6"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【7】右下</div>
+                    <div id="cell-7"></div>
+                </td>
+            </tr>
         </table>
     </div>
 
-    <script type="module" src="host_app.js"></script>
+    <!-- ゲスト専用のメインプログラムを読み込む -->
+    <script type="module" src="./guest_app.js"></script>
 </body>
 </html>
