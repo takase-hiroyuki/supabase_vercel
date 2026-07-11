@@ -18,7 +18,8 @@ export async function insertParticipant(roomId, username, userId) {
         name: username,
         join_order: 0, // 入室順（後ほどロジック実装）
         position: 0,   // 初期位置（0: スタート）
-        role: '一般'   // 初期役割
+        role: '一般',  // 初期役割
+        last_dice: 0   // 初期サイコロの出目（0はまだ振っていない状態）
     };
 
     // participants テーブルにデータを1行追加（INSERT）
@@ -40,6 +41,25 @@ export async function insertParticipant(roomId, username, userId) {
         throw error;
     } else {
         console.log("【デバッグ・成功】insertParticipant が正常に完了しました。返ってきたデータ:", data);
+    }
+    
+    return data;
+}
+
+/**
+ * 💡【新規追加】特定のプレイヤーの「state（JSONデータ）」を更新する関数
+ * @param {string} userId - 更新対象のプレイヤー固有ID
+ * @param {object} newState - 新しい状態のJSONオブジェクト
+ */
+export async function updateParticipantState(userId, newState) {
+    const { data, error } = await supabaseClient
+        .from('participants')
+        .update({ state: newState }) // stateカラムの中身を丸ごと上書き
+        .eq('user_id', userId);      // user_id が一致する行が対象
+
+    if (error) {
+        console.error('Supabase更新エラー:', error);
+        throw error;
     }
     
     return data;
