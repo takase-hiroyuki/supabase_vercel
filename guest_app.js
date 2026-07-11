@@ -63,9 +63,32 @@ btnLogin.addEventListener('click', async () => {
  * @param {string} myUserId - 自分のユーザーID
  */
 function startMonitoring(myUserId) {
+    let latestParticipants = []; // 最新の参加者リストを記憶しておく変数
+    let currentTurnUserIdCache = null; // 最新の手番IDを記憶しておく変数
+
+    // 他人のIDからユーザー名を探して手番表示を更新する共通処理
+    const updateTurnDisplay = () => {
+        if (!currentTurnUserIdCache) return;
+
+        if (currentTurnUserIdCache === myUserId) {
+            guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
+            btnRollDice.disabled = false;
+        } else {
+            // 参加者リストの中から、現在の手番のIDに一致する人を探す
+            const activePlayer = latestParticipants.find(p => p.user_id === currentTurnUserIdCache);
+            // stateの中に名前があるため、そこから取得（見つからない場合はIDを表示）
+            const activePlayerName = activePlayer && activePlayer.state ? activePlayer.state.name : currentTurnUserIdCache;
+            
+            guestDiceResult.textContent = `現在は、${activePlayerName} の番です`;
+            btnRollDice.disabled = true;
+        }
+    };
+
     // 参加者リスト全体の変更を監視
     subscribeToParticipants(roomId, (participants) => {
         console.log("参加者リストが更新されました:", participants);
+        latestParticipants = participants; // リストを最新に更新
+        updateTurnDisplay(); // 名前の表示を最新にするために再実行
     });
 
     // 部屋（手番情報）の変更を監視
@@ -76,13 +99,7 @@ function startMonitoring(myUserId) {
             return;
         }
 
-        // 自分の手番かどうかを判定
-        if (currentTurnUserId === myUserId) {
-            guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
-            btnRollDice.disabled = false;
-        } else {
-            guestDiceResult.textContent = `現在は、${currentTurnUserId} の番です`;
-            btnRollDice.disabled = true;
-        }
+        currentTurnUserIdCache = currentTurnUserId; // 手番IDをキャッシュに保存
+        updateTurnDisplay(); // 表示を更新
     });
 }
