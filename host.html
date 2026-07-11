@@ -17,9 +17,9 @@
             まだサイコロは振られていません
         </div>
 
-        <!-- 💡【新規追加】手番設定用の入力欄とボタン（1つずつ配置） -->
+        <!-- 💡手番設定用の入力欄（入室順）とボタン -->
         <div style="margin-bottom: 20px;">
-            <input type="text" id="input-next-turn-name" placeholder="プレイヤー名を入力" style="font-size: 16px; padding: 5px;">
+            <input type="number" id="input-next-turn-order" placeholder="入室順を入力" min="1" style="font-size: 16px; padding: 5px; width: 120px;">
             <button id="btn-set-turn" style="font-size: 16px; padding: 5px 10px;">を手番にする</button>
         </div>
 
@@ -58,7 +58,7 @@
             <!-- 3行目：左下(5)、下中(6)、右下(7) -->
             <tr height="80">
                 <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【5】左下</div>
+                    <div>【5】left-down</div>
                     <div id="cell-5"></div>
                 </td>
                 <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
