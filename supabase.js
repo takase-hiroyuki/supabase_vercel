@@ -47,7 +47,7 @@ export async function insertParticipant(roomId, username, userId) {
 }
 
 /**
- * 💡【新規追加】特定のプレイヤーの「state（JSONデータ）」を更新する関数
+ * 特定のプレイヤーの「state（JSONデータ）」を更新する関数
  * @param {string} userId - 更新対象のプレイヤー固有ID
  * @param {object} newState - 新しい状態のJSONオブジェクト
  */
@@ -124,4 +124,65 @@ export async function clearRoomParticipants(targetRoomId) {
     alert("COUNT: " + deleteCount);
     
     return data;
+}
+
+/**
+ * 💡【新規追加】指定した部屋の現在の手番（プレイヤーID）を取得する関数
+ * @param {string} targetRoomId - 部屋ID
+ * @returns {string|null} 現在の手番のuser_id（データがない場合はnull）
+ */
+export async function getCurrentTurn(targetRoomId) {
+    const { data, error } = await supabaseClient
+        .from('rooms')
+        .select('current_turn_user_id')
+        .eq('id', targetRoomId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('rooms取得エラー:', error);
+        throw error;
+    }
+    return data ? data.current_turn_user_id : null;
+}
+
+/**
+ * 💡【新規追加】指定した部屋の手番（プレイヤーID）を更新する関数
+ * @param {string} targetRoomId - 部屋ID
+ * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
+ */
+export async function updateCurrentTurn(targetRoomId, nextUserId) {
+    const { data, error } = await supabaseClient
+        .from('rooms')
+        .upsert({ id: targetRoomId, current_turn_user_id: nextUserId })
+        .select();
+
+    if (error) {
+        console.error('rooms更新エラー:', error);
+        throw error;
+    }
+    return data;
+}
+
+/**
+ * 💡【新規追加】部屋（rooms）の変更をリアルタイムで監視する関数
+ * @param {string} targetRoomId - 監視する部屋ID
+ * @param {function} onUpdate - データ更新時に実行する関数
+ */
+export function subscribeToRoom(targetRoomId, onUpdate) {
+    getCurrentTurn(targetRoomId).then((currentTurnUserId) => {
+        onUpdate(currentTurnUserId);
+    });
+
+    return supabaseClient
+        .channel('public:rooms')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${targetRoomId}` },
+            (payload) => {
+                console.log("【デバッグ】【rooms】変更を検知しました:", payload);
+                const nextTurnUserId = payload.new ? payload.new.current_turn_user_id : null;
+                onUpdate(nextTurnUserId);
+            }
+        )
+        .subscribe();
 }
