@@ -9,14 +9,16 @@
 </head>
 <body>
 
-    <h1>My Game (ゲスト画面)1737</h1>
+    <h1>My Game (ゲスト画面)</h1>
 
+    <!-- 1. プレイヤー登録（ログイン）エリア -->
     <div id="section-login">
         <h2>プレイヤー登録</h2>
         <input type="text" id="input-username" placeholder="あなたの名前を入力">
         <button id="btn-login">入室する</button>
     </div>
 
+    <!-- 2. あなたのステータス表示エリア（入室後に表示） -->
     <div id="section-guest" style="display: none;">
         <h2>あなたのステータス</h2>
         <p>部屋ID: <span id="guest-room-id">-</span></p>
@@ -24,8 +26,60 @@
         <div>
             現在の役割: <span id="guest-role">確認中...</span>
         </div>
+
+        <hr>
+
+        <!-- スタイルシートを使わず、HTMLの属性だけで3x3の盤面を表現 -->
+        <h2>すごろく盤面（リアルタイム）</h2>
+        <table border="2" cellspacing="5" cellpadding="10">
+            <!-- 1行目：左上(3)、上中(2)、右上(1) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【3】左上</div>
+                    <div id="cell-3"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【2】上中</div>
+                    <div id="cell-2"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【1】右上</div>
+                    <div id="cell-1"></div>
+                </td>
+            </tr>
+            <!-- 2行目：左中(4)、真ん中（不使用）、右中(0:スタート) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【4】左中</div>
+                    <div id="cell-4"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#ffffff">
+                    <!-- 真ん中の空きマス -->
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#ffeb3b">
+                    <b>【0】スタート</b>
+                    <div id="cell-0"></div>
+                </td>
+            </tr>
+            <!-- 3行目：左下(5)、下中(6)、右下(7) -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【5】左下</div>
+                    <div id="cell-5"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【6】下中</div>
+                    <div id="cell-6"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【7】右下</div>
+                    <div id="cell-7"></div>
+                </td>
+            </tr>
+        </table>
     </div>
 
+    <!-- ゲスト専用のメインプログラムを読み込む -->
     <script type="module" src="./guest_app.js"></script>
 </body>
 </html>
