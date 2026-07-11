@@ -17,6 +17,12 @@
             まだサイコロは振られていません
         </div>
 
+        <!-- 💡【新規追加】手番設定用の入力欄とボタン（1つずつ配置） -->
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="input-next-turn-name" placeholder="プレイヤー名を入力" style="font-size: 16px; padding: 5px;">
+            <button id="btn-set-turn" style="font-size: 16px; padding: 5px 10px;">を手番にする</button>
+        </div>
+
         <!-- スタイルシートを使わず、HTMLの属性だけで3x3の盤面を表現 -->
         <h2>すごろく盤面（リアルタイム）</h2>
         <table border="2" cellspacing="5" cellpadding="10">
@@ -71,13 +77,12 @@
         <h2>参加者名簿（ホスト画面）</h2>
         <button id="btn-clear-room">部屋のデータをリセット</button>
         
-        <table border="1">
+        <table border="1" style="margin-top: 10px;">
             <thead>
                 <tr>
                     <th>入室順</th>
                     <th>プレイヤー名 (ID)</th>
                     <th>現在の位置（マス）</th>
-                    <th>役割の変更（ホスト権限）</th>
                 </tr>
             </thead>
             <tbody id="host-participant-list">
