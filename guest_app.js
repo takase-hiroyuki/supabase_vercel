@@ -3,7 +3,7 @@
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
-import { insertParticipant } from './supabase.js';
+import { insertParticipant, subscribeToRoom, subscribeToParticipants } from './supabase.js';
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const sectionLogin = document.getElementById('section-login');
@@ -11,9 +11,10 @@ const sectionGuest = document.getElementById('section-guest');
 
 const inputUsername = document.getElementById('input-username');
 const btnLogin = document.getElementById('btn-login');
+const btnRollDice = document.getElementById('btn-roll-dice');
+const guestDiceResult = document.getElementById('guest-dice-result');
 
 // 2. 初期状態の画面セットアップ
-// ゲスト画面が開かれたら、自動的にログイン（登録）エリアを表示する
 sectionLogin.style.display = 'block';
 document.getElementById('guest-room-id').textContent = roomId || "未指定";
 
@@ -26,31 +27,29 @@ btnLogin.addEventListener('click', async () => {
         return;
     }
     
-    // ブラウザの記憶ポケットからユーザーIDを取得、なければ新規作成
     let userId = getFromStorage('user_id');
     if (!userId) {
         userId = 'user_' + Math.random().toString(36).substring(2, 11);
         saveToStorage('user_id', userId);
     }
     
-    // 名前も記憶ポケットに保存
     saveToStorage('player_name', username);
     
     try {
-        // 連打防止のためにボタンを無効化
         btnLogin.disabled = true;
         btnLogin.textContent = '入室処理中...';
         
-        // Supabaseの「participants」テーブルにデータを送信！
         await insertParticipant(roomId, username, userId);
         
         alert(`Supabaseへの送信が成功しました！\nプレイヤー名: ${username}\nID: ${userId}`);
         
-        // 画面をログインからステータス表示に切り替える
         sectionLogin.style.display = 'none';
         sectionGuest.style.display = 'block';
         document.getElementById('guest-name').textContent = username;
         document.getElementById('guest-role').textContent = '一般（入室済み）';
+        
+        // 入室が成功したら、手番の監視と参加者リストの監視を開始する
+        startMonitoring(userId);
         
     } catch (error) {
         alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
@@ -58,3 +57,34 @@ btnLogin.addEventListener('click', async () => {
         btnLogin.textContent = '入室する';
     }
 });
+
+/**
+ * 💡【新規実装】手番のリアルタイム監視を開始する関数
+ * @param {string} myUserId - 自分のユーザーID
+ */
+function startMonitoring(myUserId) {
+    // 参加者リスト全体の変更を監視（名前の解決や背景色の変更で使用予定）
+    subscribeToParticipants(roomId, (participants) => {
+        console.log("参加者リストが更新されました:", participants);
+        // ※背景色変更と位置情報の反映ロジックは次のステップでここに追記します
+    });
+
+    // 部屋（手番情報）の変更を監視
+    subscribeToRoom(roomId, (currentTurnUserId) => {
+        if (!currentTurnUserId) {
+            guestDiceResult.textContent = "手番が設定されていません";
+            btnRollDice.disabled = true;
+            return;
+        }
+
+        // 自分の手番かどうかを判定
+        if (currentTurnUserId === myUserId) {
+            guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
+            btnRollDice.disabled = false; // ボタンを押せるようにする
+        } else {
+            // 他の人の手番の場合は、その人のIDを表示（次のステップで名前に変換します）
+            guestDiceResult.textContent = `現在は、${currentTurnUserId} の番です`;
+            btnRollDice.disabled = true;  // ボタンを押せないようにする
+        }
+    });
+}
