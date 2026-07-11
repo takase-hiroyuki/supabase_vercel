@@ -59,14 +59,13 @@ btnLogin.addEventListener('click', async () => {
 });
 
 /**
- * 💡【新規実装】手番のリアルタイム監視を開始する関数
+ * 手番のリアルタイム監視を開始する関数
  * @param {string} myUserId - 自分のユーザーID
  */
 function startMonitoring(myUserId) {
-    // 参加者リスト全体の変更を監視（名前の解決や背景色の変更で使用予定）
+    // 参加者リスト全体の変更を監視
     subscribeToParticipants(roomId, (participants) => {
         console.log("参加者リストが更新されました:", participants);
-        // ※背景色変更と位置情報の反映ロジックは次のステップでここに追記します
     });
 
     // 部屋（手番情報）の変更を監視
@@ -80,11 +79,10 @@ function startMonitoring(myUserId) {
         // 自分の手番かどうかを判定
         if (currentTurnUserId === myUserId) {
             guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
-            btnRollDice.disabled = false; // ボタンを押せるようにする
+            btnRollDice.disabled = false;
         } else {
-            // 他の人の手番の場合は、その人のIDを表示（次のステップで名前に変換します）
             guestDiceResult.textContent = `現在は、${currentTurnUserId} の番です`;
-            btnRollDice.disabled = true;  // ボタンを押せないようにする
+            btnRollDice.disabled = true;
         }
     });
 }
