@@ -65,7 +65,6 @@ export async function updateParticipantState(userId, newState) {
     return data;
 }
 
-
 /**
  * リアルタイムで参加者リストの変更を監視し、描画関数を実行する関数
  * @param {string} targetRoomId - 監視する部屋ID
@@ -127,7 +126,7 @@ export async function clearRoomParticipants(targetRoomId) {
 }
 
 /**
- * 💡【新規追加】指定した部屋の現在の手番（プレイヤーID）を取得する関数
+ * 指定した部屋の現在の手番（プレイヤーID）を取得する関数
  * @param {string} targetRoomId - 部屋ID
  * @returns {string|null} 現在の手番のuser_id（データがない場合はnull）
  */
@@ -146,7 +145,7 @@ export async function getCurrentTurn(targetRoomId) {
 }
 
 /**
- * 💡【新規追加】指定した部屋の手番（プレイヤーID）を更新する関数
+ * 指定した部屋の手番（プレイヤーID）を更新する関数
  * @param {string} targetRoomId - 部屋ID
  * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
  */
@@ -164,7 +163,7 @@ export async function updateCurrentTurn(targetRoomId, nextUserId) {
 }
 
 /**
- * 💡【新規追加】部屋（rooms）の変更をリアルタイムで監視する関数
+ * 部屋（rooms）の変更をリアルタイムで監視する関数
  * @param {string} targetRoomId - 監視する部屋ID
  * @param {function} onUpdate - データ更新時に実行する関数
  */
@@ -188,7 +187,7 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
 }
 
 /**
- * 指定したプレイヤーがすでに部屋に登録されているか確認する関数
+ * 💡【追加成功】指定したプレイヤーがすでに部屋に登録されているか確認する関数
  * @param {string} targetRoomId - 部屋ID
  * @param {string} targetUserId - プレイヤー固有ID
  * @returns {object|null} 登録されている場合はその行のデータ、ない場合はnull
