@@ -14,6 +14,18 @@ const btnLogin = document.getElementById('btn-login');
 const btnRollDice = document.getElementById('btn-roll-dice');
 const guestDiceResult = document.getElementById('guest-dice-result');
 
+// 【追加】デバッグ用：localStorageの記憶状態を画面に反映する関数
+function displayLocalStorageStatus() {
+    const storedId = getFromStorage('user_id');
+    const storedName = getFromStorage('player_name');
+
+    document.getElementById('debug-storage-id').textContent = storedId ? storedId : "未定義";
+    document.getElementById('debug-storage-name').textContent = storedName ? storedName : "未定義";
+}
+
+// 実行して現在の記憶状態を表示
+displayLocalStorageStatus();
+
 // 初期状態の画面セットアップ
 document.getElementById('guest-room-id').textContent = roomId || "未指定";
 
