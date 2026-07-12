@@ -209,18 +209,13 @@ export async function checkExistingParticipant(targetRoomId, targetUserId) {
 }
 
 /**
- * 特定の参加者を削除（退室処理）し、必要に応じて手番を次のプレイヤーに移譲する関数
+ * 特定の参加者を削除（退室処理）する関数
+ * 削除されたゲストが手番だった場合は、手番を未定義（null）にする
  * @param {string} targetRoomId - 部屋ID
  * @param {string} targetUserId - 削除対象のユーザーID
  */
 export async function deleteParticipant(targetRoomId, targetUserId) {
-    // 1. 削除前に、現在の全参加者リストを自動連番（id）順で取得し、現在の手番も確認
-    const { data: participants } = await supabaseClient
-        .from('participants')
-        .select('*')
-        .eq('room_id', targetRoomId)
-        .order('id', { ascending: true });
-        
+    // 1. 削除前に、現在の手番ユーザーIDを確認
     const currentTurn = await getCurrentTurn(targetRoomId);
 
     // 2. 該当ユーザーのレコードを物理削除
@@ -235,23 +230,8 @@ export async function deleteParticipant(targetRoomId, targetUserId) {
         throw error;
     }
 
-    // 3. 削除されたプレイヤーが現在の手番保持者であった場合の移譲ロジック
-    if (currentTurn === targetUserId && participants) {
-        // 削除対象の配列内インデックスを特定
-        const targetIndex = participants.findIndex(p => p.user_id === targetUserId);
-        let nextPlayerId = null;
-
-        if (targetIndex !== -1 && participants.length > 1) {
-            // 次のインデックスのプレイヤーが存在すれば特定（末尾なら最初のプレイヤー [0] に戻る）
-            const nextIndex = (targetIndex + 1) < participants.length ? (targetIndex + 1) : 0;
-            
-            // 選択した次の候補が自分自身（削除対象）でないことを確認してIDを設定
-            if (participants[nextIndex].user_id !== targetUserId) {
-                nextPlayerId = participants[nextIndex].user_id;
-            }
-        }
-
-        // 次の手番IDを書き込み（生存プレイヤーがいない場合は null になる）
-        await updateCurrentTurn(targetRoomId, nextPlayerId);
+    // 3. 削除されたプレイヤーが現在の手番保持者であった場合、手番を未定義（null）にする
+    if (currentTurn === targetUserId) {
+        await updateCurrentTurn(targetRoomId, null);
     }
 }
