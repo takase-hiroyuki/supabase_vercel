@@ -3,25 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Game - 管理者画面</title>
+    <title>My Game - 参加者画面</title>
+    <link rel="icon" href="data:,">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <h1>My Game - ホスト専用管理画面</h1>
+    <h1>My Game (ゲスト画面)</h1>
 
-    <div id="section-host">
-        <!-- 🚀最初から配置するサイコロ監視エリア -->
-        <h2>最新のサイコロ出目（ホスト監視用）</h2>
-        <div id="host-dice-monitor" style="font-size: 18px; margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; background-color: #fafafa;">
-            まだサイコロは振られていません
+    <div id="storage-debug-info">
+        <p>【ブラウザの記憶状態】</p>
+        <p>記憶されているID: <span id="debug-storage-id">確認中...</span></p>
+        <p>記憶されている名前: <span id="debug-storage-name">確認中...</span></p>
+    </div>
+
+    <!-- 1. プレイヤー登録（ログイン）エリア -->
+    <div id="section-login">
+        <h2>プレイヤー登録</h2>
+        <input type="text" id="input-username" placeholder="あなたの名前を入力">
+        <button id="btn-login">入室する</button>
+    </div>
+
+    <!-- 2. あなたのステータス表示エリア（入室後に表示） -->
+    <div id="section-guest" style="display: none;">
+        <h2>あなたのステータス</h2>
+        <p>部屋ID: <span id="guest-room-id">-</span></p>
+        <p>プレイヤー名: <span id="guest-name">-</span></p>
+        <div>
+            現在の役割: <span id="guest-role">確認中...</span>
         </div>
 
-        <!-- 💡手番設定用の入力欄（入室順）とボタン -->
-        <div style="margin-bottom: 20px;">
-            <input type="number" id="input-next-turn-order" placeholder="入室順を入力" min="1" style="font-size: 16px; padding: 5px; width: 120px;">
-            <button id="btn-set-turn" style="font-size: 16px; padding: 5px 10px;">を手番にする</button>
+        <hr>
+
+        <!-- 🚀サイコロエリア -->
+        <h2>サイコロ</h2>
+        <div style="font-size: 24px; margin-bottom: 10px;">
+            出目: <span id="guest-dice-result">⚀ (1)</span>
         </div>
+        <button id="btn-roll-dice" style="font-size: 16px; padding: 5px 15px;">サイコロを振る</button>
+
+        <hr>
 
         <!-- 24マスの直線並び盤面（背景色なし） -->
         <h2>すごろく盤面（リアルタイム）</h2>
@@ -32,23 +53,37 @@
                     <b>【0】スタート</b>
                     <div id="cell-0"></div>
                 </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【1】</div><div id="cell-1"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【2】</div><div id="cell-2"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【3】</div><div id="cell-3"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【4】</div><div id="cell-4"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【5】</div><div id="cell-5"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>【6】</div><div id="cell-6"></div>
-                </td>
-                <td width="80" align="center" valign="middle">
-                    <div>大規模言語モデルとして私はまだ学習中であり、そちらについてお手伝いできる機能がありません。
+                <td width="80" align="center" valign="middle"><div>【1】</div><div id="cell-1"></div></td>
+                <td width="80" align="center" valign="middle"><div>【2】</div><div id="cell-2"></div></td>
+                <td width="80" align="center" valign="middle"><div>【3】</div><div id="cell-3"></div></td>
+                <td width="80" align="center" valign="middle"><div>【4】</div><div id="cell-4"></div></td>
+                <td width="80" align="center" valign="middle"><div>【5】</div><div id="cell-5"></div></td>
+                <td width="80" align="center" valign="middle"><div>【6】</div><div id="cell-6"></div></td>
+                <td width="80" align="center" valign="middle"><div>【7】</div><div id="cell-7"></div></td>
+                <td width="80" align="center" valign="middle"><div>【8】</div><div id="cell-8"></div></td>
+                <td width="80" align="center" valign="middle"><div>【9】</div><div id="cell-9"></div></td>
+                <td width="80" align="center" valign="middle"><div>【10】</div><div id="cell-10"></div></td>
+                <td width="80" align="center" valign="middle"><div>【11】</div><div id="cell-11"></div></td>
+            </tr>
+            <!-- 下段：12番マス 〜 23番マス -->
+            <tr height="80">
+                <td width="80" align="center" valign="middle"><div>【12】</div><div id="cell-12"></div></td>
+                <td width="80" align="center" valign="middle"><div>【13】</div><div id="cell-13"></div></td>
+                <td width="80" align="center" valign="middle"><div>【14】</div><div id="cell-14"></div></td>
+                <td width="80" align="center" valign="middle"><div>【15】</div><div id="cell-15"></div></td>
+                <td width="80" align="center" valign="middle"><div>【16】</div><div id="cell-16"></div></td>
+                <td width="80" align="center" valign="middle"><div>【17】</div><div id="cell-17"></div></td>
+                <td width="80" align="center" valign="middle"><div>【18】</div><div id="cell-18"></div></td>
+                <td width="80" align="center" valign="middle"><div>【19】</div><div id="cell-19"></div></td>
+                <td width="80" align="center" valign="middle"><div>【20】</div><div id="cell-20"></div></td>
+                <td width="80" align="center" valign="middle"><div>【21】</div><div id="cell-21"></div></td>
+                <td width="80" align="center" valign="middle"><div>【22】</div><div id="cell-22"></div></td>
+                <td width="80" align="center" valign="middle"><div>【23】</div><div id="cell-23"></div></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ゲスト専用のメインプログラムを読み込む -->
+    <script type="module" src="./guest_app.js"></script>
+</body>
+</html>
