@@ -3,7 +3,7 @@
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
-import { insertParticipant, subscribeToRoom, subscribeToParticipants } from './supabase.js';
+import { insertParticipant, subscribeToRoom, subscribeToParticipants, getCurrentTurn, updateCurrentTurn } from './supabase.js';
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const sectionLogin = document.getElementById('section-login');
@@ -38,8 +38,19 @@ btnLogin.addEventListener('click', async () => {
     try {
         btnLogin.disabled = true;
         btnLogin.textContent = '入室処理中...';
+
+        // 💡【重複防止ロジック】すでにこの部屋に自分が存在しているか、最新の参加者リストを一度確認する
+        // subscribeToParticipants 内部で行っている最初の一時取得と同じ方法、または簡易チェック
+        // 今回は安全のため、一時的に確認する処理を挟むか、または名簿が空でない場合に備える
         
         await insertParticipant(roomId, username, userId);
+        
+        // データベース上の現在の部屋の手番を確認する
+        const currentTurn = await getCurrentTurn(roomId);
+        if (!currentTurn) {
+            await updateCurrentTurn(roomId, userId);
+            console.log("【デバッグ】最初の入室者のため、手番に設定しました:", userId);
+        }
         
         alert(`Supabaseへの送信が成功しました！\nプレイヤー名: ${username}\nID: ${userId}`);
         
@@ -48,13 +59,26 @@ btnLogin.addEventListener('click', async () => {
         document.getElementById('guest-name').textContent = username;
         document.getElementById('guest-role').textContent = '一般（入室済み）';
         
-        // 入室が成功したら、手番の監視と参加者リストの監視を開始する
         startMonitoring(userId);
         
     } catch (error) {
-        alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
-        btnLogin.disabled = false;
-        btnLogin.textContent = '入室する';
+        // 💡【重複エラー時のフォールバック】
+        // もしSupabase側で一意制約（Unique）エラー、または同一IDによるエラーが出た場合は
+        // データを新規挿入せず、そのまま既存のデータを用いてゲーム画面へ進ませます。
+        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('already exists')) {
+            console.log("【デバッグ】既に同一IDで入室済みのデータを検知。そのままゲーム画面へ移行します。");
+            
+            sectionLogin.style.display = 'none';
+            sectionGuest.style.display = 'block';
+            document.getElementById('guest-name').textContent = username;
+            document.getElementById('guest-role').textContent = '一般（再入室）';
+            
+            startMonitoring(userId);
+        } else {
+            alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
+            btnLogin.disabled = false;
+            btnLogin.textContent = '入室する';
+        }
     }
 });
 
@@ -63,35 +87,37 @@ btnLogin.addEventListener('click', async () => {
  * @param {string} myUserId - 自分のユーザーID
  */
 function startMonitoring(myUserId) {
-    let latestParticipants = []; // 最新の参加者リストを記憶しておく変数
-    let currentTurnUserIdCache = null; // 最新の手番IDを記憶しておく変数
+    let latestParticipants = []; 
+    let currentTurnUserIdCache = null; 
 
-    // サイコロの出目テキストが表示されている親のdiv要素を取得
     const diceContainer = guestDiceResult.parentElement;
 
-    // 他人のIDからユーザー名を探して手番表示を更新する共通処理
     const updateTurnDisplay = () => {
-        if (!currentTurnUserIdCache) return;
+        if (!currentTurnUserIdCache) {
+            guestDiceResult.textContent = "手番が設定されていません";
+            btnRollDice.disabled = true;
+            if (diceContainer) {
+                diceContainer.style.backgroundColor = 'transparent';
+                diceContainer.style.padding = '0px';
+            }
+            return;
+        }
 
         if (currentTurnUserIdCache === myUserId) {
             guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
             btnRollDice.disabled = false;
             
-            // 💡自分がサイコロを振れるときは、エリアの背景色を薄い黄色（#fff9c4）にする
             if (diceContainer) {
                 diceContainer.style.backgroundColor = '#fff9c4';
                 diceContainer.style.padding = '10px';
             }
         } else {
-            // 参加者リストの中から、現在の手番のIDに一致する人を探す
             const activePlayer = latestParticipants.find(p => p.user_id === currentTurnUserIdCache);
-            // stateの中に名前があるため、そこから取得（見つからない場合はIDを表示）
             const activePlayerName = activePlayer && activePlayer.state ? activePlayer.state.name : currentTurnUserIdCache;
             
             guestDiceResult.textContent = `現在は、${activePlayerName} の番です`;
             btnRollDice.disabled = true;
             
-            // 💡他人の手番のときは背景色を透明（なし）に戻す
             if (diceContainer) {
                 diceContainer.style.backgroundColor = 'transparent';
                 diceContainer.style.padding = '0px';
@@ -99,22 +125,14 @@ function startMonitoring(myUserId) {
         }
     };
 
-    // 参加者リスト全体の変更を監視
     subscribeToParticipants(roomId, (participants) => {
         console.log("参加者リストが更新されました:", participants);
-        latestParticipants = participants; // リストを最新に更新
-        updateTurnDisplay(); // 名前の表示を最新にするために再実行
+        latestParticipants = participants; 
+        updateTurnDisplay(); 
     });
 
-    // 部屋（手番情報）の変更を監視
     subscribeToRoom(roomId, (currentTurnUserId) => {
-        if (!currentTurnUserId) {
-            guestDiceResult.textContent = "手番が設定されていません";
-            btnRollDice.disabled = true;
-            return;
-        }
-
-        currentTurnUserIdCache = currentTurnUserId; // 手番IDをキャッシュに保存
-        updateTurnDisplay(); // 表示を更新
+        currentTurnUserIdCache = currentTurnUserId; 
+        updateTurnDisplay(); 
     });
 }
