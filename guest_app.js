@@ -2,7 +2,7 @@
 
 import { roomId } from './config.js';
 import { getFromStorage } from './storage.js';
-import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from './supabase.js';
+import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
 
@@ -14,7 +14,7 @@ const btnLogin = document.getElementById('btn-login');
 const btnRollDice = document.getElementById('btn-roll-dice');
 const guestDiceResult = document.getElementById('guest-dice-result');
 
-// 【追加】デバッグ用：localStorageの記憶状態を画面に反映する関数
+// デバッグ用：localStorageの記憶状態を画面に反映する関数
 function displayLocalStorageStatus() {
     const storedId = getFromStorage('user_id');
     const storedName = getFromStorage('player_name');
@@ -147,7 +147,6 @@ function startMonitoring(myUserId) {
         // 現在の自分のデータをキャッシュから取得
         const myData = latestParticipants.find(p => p.user_id === myUserId);
         if (!myData || !myData.state) {
-            // 【デバッグ挿入】データ未検出時の状態を出力
             guestDiceResult.textContent = `エラー: 自分のデータが見つかりません (myUserId: ${myUserId})`;
             alert('自分のプレイヤーデータが見つかりません。');
             return;
@@ -163,7 +162,7 @@ function startMonitoring(myUserId) {
             const currentPosition = myData.state.position ?? 0;
             const nextPosition = calculateNextPosition(currentPosition, diceRoll);
 
-            // 3. 更新用のstateオブジェクトを組み立てる (データベースをキレイに保つため join_order は含めない)
+            // 3. 更新用のstateオブジェクトを組み立てる
             const updatedState = {
                 name: myData.state.name,
                 position: nextPosition,
@@ -171,18 +170,30 @@ function startMonitoring(myUserId) {
                 last_dice: diceRoll
             };
 
-            // 【デバッグ挿入】送信直前の状態を出力
+            // 送信直前の状態を出力
             guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
 
             // 4. Supabaseへ状態を送信（アップデート）
             const dbResult = await updateParticipantState(myUserId, updatedState);
             console.log("【デバッグ・UPDATE戻り値】:", dbResult);
 
-            // 【デバッグ挿入】送信成功時の状態を出力
+            // 5. 【追加】手番を次のプレイヤーへ自動的に移行する処理
+            if (latestParticipants.length > 0) {
+                // 現在の入室順における自分の位置（インデックス）を探す
+                const myIndex = latestParticipants.findIndex(p => p.user_id === myUserId);
+                // 次の人の位置を算出（最後のプレイヤーの場合は 0 に戻る）
+                const nextIndex = (myIndex + 1) % latestParticipants.length;
+                const nextTurnUserId = latestParticipants[nextIndex].user_id;
+
+                console.log(`【デバッグ・手番移行】次の手番IDを送信します: ${nextTurnUserId}`);
+                // データベースの rooms テーブルのcurrent_turn_user_idを更新
+                await updateCurrentTurn(roomId, nextTurnUserId);
+            }
+
+            // 送信成功時の状態を出力
             guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}`;
 
         } catch (error) {
-            // 【デバッグ挿入】例外発生時の状態を出力
             guestDiceResult.textContent = `例外発生: ${error.message || JSON.stringify(error)}`;
             alert('サイコロ処理の送信に失敗しました。');
             btnRollDice.disabled = false;
@@ -194,7 +205,7 @@ function startMonitoring(myUserId) {
         latestParticipants = participants; 
         updateTurnDisplay(); 
 
-        // 【追加】すごろく盤面の表示を一度すべてクリアする
+        // すごろく盤面の表示を一度すべてクリアする
         for (let i = 0; i <= 7; i++) {
             const cell = document.getElementById(`cell-${i}`);
             if (cell) cell.textContent = "";
