@@ -3,99 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Game - 参加者画面</title>
-    <link rel="icon" href="data:,">
+    <title>My Game - 管理者画面</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <h1>My Game (ゲスト画面)</h1>
+    <h1>My Game - ホスト専用管理画面</h1>
 
-    <div id="storage-debug-info">
-        <p>【ブラウザの記憶状態】</p>
-        <p>記憶されているID: <span id="debug-storage-id">確認中...</span></p>
-        <p>記憶されている名前: <span id="debug-storage-name">確認中...</span></p>
-    </div>
-
-    
-    <!-- 1. プレイヤー登録（ログイン）エリア -->
-    <div id="section-login">
-        <h2>プレイヤー登録</h2>
-        <input type="text" id="input-username" placeholder="あなたの名前を入力">
-        <button id="btn-login">入室する</button>
-    </div>
-
-    <!-- 2. あなたのステータス表示エリア（入室後に表示） -->
-    <div id="section-guest" style="display: none;">
-        <h2>あなたのステータス</h2>
-        <p>部屋ID: <span id="guest-room-id">-</span></p>
-        <p>プレイヤー名: <span id="guest-name">-</span></p>
-        <div>
-            現在の役割: <span id="guest-role">確認中...</span>
+    <div id="section-host">
+        <!-- 🚀最初から配置するサイコロ監視エリア -->
+        <h2>最新のサイコロ出目（ホスト監視用）</h2>
+        <div id="host-dice-monitor" style="font-size: 18px; margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; background-color: #fafafa;">
+            まだサイコロは振られていません
         </div>
 
-        <hr>
-
-        <!-- 🚀サイコロエリア（この中のテキストをプログラムで要望の文字列に書き換えます） -->
-        <h2>サイコロ</h2>
-        <div style="font-size: 24px; margin-bottom: 10px;">
-            出目: <span id="guest-dice-result">⚀ (1)</span>
+        <!-- 💡手番設定用の入力欄（入室順）とボタン -->
+        <div style="margin-bottom: 20px;">
+            <input type="number" id="input-next-turn-order" placeholder="入室順を入力" min="1" style="font-size: 16px; padding: 5px; width: 120px;">
+            <button id="btn-set-turn" style="font-size: 16px; padding: 5px 10px;">を手番にする</button>
         </div>
-        <button id="btn-roll-dice" style="font-size: 16px; padding: 5px 15px;">サイコロを振る</button>
 
-        <hr>
-
-        <!-- スタイルシートを使わず、HTMLの属性だけで3x3の盤面を表現 -->
+        <!-- 24マスの直線並び盤面（背景色なし） -->
         <h2>すごろく盤面（リアルタイム）</h2>
         <table border="2" cellspacing="5" cellpadding="10">
-            <!-- 1行目：左上(3)、上中(2)、右上(1) -->
+            <!-- 上段：0番マス（スタート）〜 11番マス -->
             <tr height="80">
-                <td id="td-cell-3" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【3】左上</div>
-                    <div id="cell-3"></div>
-                </td>
-                <td id="td-cell-2" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【2】上中</div>
-                    <div id="cell-2"></div>
-                </td>
-                <td id="td-cell-1" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【1】右上</div>
-                    <div id="cell-1"></div>
-                </td>
-            </tr>
-            <!-- 2行目：左中(4)、真ん中（不使用）、右中(0:スタート) -->
-            <tr height="80">
-                <td id="td-cell-4" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【4】左中</div>
-                    <div id="cell-4"></div>
-                </td>
-                <td width="80" align="center" valign="middle" bgcolor="#ffffff">
-                    <!-- 真ん中の空きマス -->
-                </td>
-                <td id="td-cell-0" width="80" align="center" valign="middle" bgcolor="#ffeb3b">
+                <td width="80" align="center" valign="middle">
                     <b>【0】スタート</b>
                     <div id="cell-0"></div>
                 </td>
-            </tr>
-            <!-- 3行目：左下(5)、下中(6)、右下(7) -->
-            <tr height="80">
-                <td id="td-cell-5" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【5】左下</div>
-                    <div id="cell-5"></div>
+                <td width="80" align="center" valign="middle">
+                    <div>【1】</div><div id="cell-1"></div>
                 </td>
-                <td id="td-cell-6" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【6】下中</div>
-                    <div id="cell-6"></div>
+                <td width="80" align="center" valign="middle">
+                    <div>【2】</div><div id="cell-2"></div>
                 </td>
-                <td id="td-cell-7" width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【7】右下</div>
-                    <div id="cell-7"></div>
+                <td width="80" align="center" valign="middle">
+                    <div>【3】</div><div id="cell-3"></div>
                 </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- ゲスト専用のメインプログラムを読み込む -->
-    <script type="module" src="./guest_app.js"></script>
-</body>
-</html>
+                <td width="80" align="center" valign="middle">
+                    <div>【4】</div><div id="cell-4"></div>
+                </td>
+                <td width="80" align="center" valign="middle">
+                    <div>【5】</div><div id="cell-5"></div>
+                </td>
+                <td width="80" align="center" valign="middle">
+                    <div>【6】</div><div id="cell-6"></div>
+                </td>
+                <td width="80" align="center" valign="middle">
+                    <div>大規模言語モデルとして私はまだ学習中であり、そちらについてお手伝いできる機能がありません。
