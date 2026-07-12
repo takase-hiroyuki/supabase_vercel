@@ -2,14 +2,14 @@
 
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
-import { subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn } from './supabase.js';
+import { subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const listBody = document.getElementById('host-participant-list');
 const btnClearRoom = document.getElementById('btn-clear-room');
 const hostDiceMonitor = document.getElementById('host-dice-monitor');
 
-// 💡【新規追加】入室順の入力欄と設定ボタン
+// 💡手番設定用の入力欄（入室順）とボタン
 const inputNextTurnOrder = document.getElementById('input-next-turn-order');
 const btnSetTurn = document.getElementById('btn-set-turn');
 
@@ -127,7 +127,7 @@ subscribeToRoom(roomId, (currentTurnUserId) => {
     updateTurnDisplay(); // 表示を更新
 });
 
-// 5. 部屋データのリセットボタンが押された時の動き
+// 5. 部屋データのリセットボタン（全員を退室させる）が押された時の動き
 if (btnClearRoom) {
     btnClearRoom.addEventListener('click', async () => {
         if (!confirm('本当にこの部屋の参加者データをすべてリセットしますか？')) {
@@ -145,7 +145,7 @@ if (btnClearRoom) {
             alert('データのリセットに失敗しました。');
         } finally {
             btnClearRoom.disabled = false;
-            btnClearRoom.textContent = '部屋のデータをリセット';
+            btnClearRoom.textContent = '全員を退室させる';
         }
     });
 }
@@ -158,18 +158,31 @@ if (btnKickParticipant && inputKickOrder) {
     btnKickParticipant.addEventListener('click', async () => {
         const orderValue = parseInt(inputKickOrder.value.trim(), 10);
         
-        if (isNaN(orderValue) || orderValue < 1) {
-            alert('退室させる人の正しい番号を入力してください。');
+        if (isNaN(orderValue) || orderValue < 1 || orderValue > latestParticipants.length) {
+            alert(`有効な退室者の番号（1 から ${latestParticipants.length} の間）を入力してください。`);
             return;
         }
 
-        // リアルタイムで同期している現在の参加者リストから、該当する入室順のプレイヤーを探す
-        // （※現在の名簿描画ロジックにおいて、インデックス + 1 が入室順として表示されている仕様に基づきます）
-        // もしすでに latestParticipants などのリストが上部でグローバル定義されている場合はそれを利用、
-        // あるいはボタン押下時に確実に特定するため、安全に入室順のインデックスで判定します。
-        // ここでは最新のキャッシュ配列（上部で定義済みの参加者配列変数）を走査します。
+        // 入力された番号（1始まり）からキャッシュ配列のプレイヤーを特定
+        const targetPlayer = latestParticipants[orderValue - 1];
         
-        // 💡注意: host_app.js 内で参加者リストを保持している変数名（例: latestParticipants や participantsList など）
-        // の名称に合わせる必要があります。現状の host_app.js の変数定義を確認するため、まずはここまでを保存します。
+        if (!confirm(`プレイヤー「${targetPlayer.state?.name || '不明'}」を退室させますか？`)) {
+            return;
+        }
+
+        try {
+            btnKickParticipant.disabled = true;
+            btnKickParticipant.textContent = '処理中...';
+
+            // Supabase から該当ユーザーを削除
+            await deleteParticipant(roomId, targetPlayer.user_id);
+            
+            inputKickOrder.value = ''; // 入力欄をクリア
+        } catch (error) {
+            alert('退室処理に失敗しました。');
+        } finally {
+            btnKickParticipant.disabled = false;
+            btnKickParticipant.textContent = '退室させる';
+        }
     });
 }
