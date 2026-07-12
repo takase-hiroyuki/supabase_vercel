@@ -3,7 +3,7 @@
 // config.js から接続鍵をインポート
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
-// Supabaseクライアントを初期化（※HTML側で読み込んでいる大元の辞書『supabase』を使います）
+// Supabaseクライアントを初期化（HTML側で読み込んでいる大元の辞書『supabase』を使用）
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /**
@@ -13,10 +13,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
  * @param {string} userId - プレイヤーの固有ID
  */
 export async function insertParticipant(roomId, username, userId) {
-    // JSON型カラム「state」に格納するオブジェクトの定義
+    // JSON型カラム「state」に格納するオブジェクトの定義（不要な join_order は廃止）
     const playerState = {
         name: username,
-        join_order: 0, // 入室順（後ほどロジック実装）
         position: 0,   // 初期位置（0: スタート）
         role: '一般',  // 初期役割
         last_dice: 0   // 初期サイコロの出目（0はまだ振っていない状態）
@@ -29,18 +28,13 @@ export async function insertParticipant(roomId, username, userId) {
             { 
                 room_id: roomId, 
                 user_id: userId, 
-                state: playerState // JSON型カラムにオブジェクトを割り当て
+                state: playerState 
             }
         ]);
     
     if (error) {
         console.error('Supabase送信エラー:', error);
-        console.log("【デバッグ・エラー詳細】メッセージ:", error.message);
-        console.log("【デバッグ・エラー詳細】コード:", error.code);
-        console.log("【デバッグ・エラー詳細】詳細:", error.details);
         throw error;
-    } else {
-        console.log("【デバッグ・成功】insertParticipant が正常に完了しました。返ってきたデータ:", data);
     }
     
     return data;
@@ -71,7 +65,7 @@ export async function updateParticipantState(userId, newState) {
  * @param {function} onUpdate - データ更新時に実行する描画関数
  */
 export function subscribeToParticipants(targetRoomId, onUpdate) {
-    // 1. 最初の一回、現在テーブルにあるデータを取得して描画に渡す
+    // 1. 最初の一回、現在テーブルにあるデータを自動連番（id）順に取得して描画に渡す
     supabaseClient
         .from('participants')
         .select('*')
@@ -89,7 +83,7 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             { event: '*', schema: 'public', table: 'participants' },
             async (payload) => {
                 console.log("【デバッグ・Realtime受信】変更を検知しました:", payload);
-                // 変更があったので最新のリストを再取得して描画関数に渡す
+                // 変更があったので最新のリストを自動連番（id）順で再取得して描画関数に渡す
                 const { data } = await supabaseClient
                     .from('participants')
                     .select('*')
@@ -98,16 +92,15 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
                 if (data) onUpdate(data);
             }
         )
-        .subscribe((status, err) => {
-            console.log("【デバッグ・Realtime状態】接続ステータス:", status);
-            if (err) console.error("【デバッグ・Realtimeエラー】詳細:", err);
-        });
+        .subscribe();
 }
 
 /**
- * 部屋のデータをリセットする関数
+ * 部屋のデータをリセットする関数（一括削除）
+ * @param {string} targetRoomId - 部屋ID
  */
 export async function clearRoomParticipants(targetRoomId) {
+    // 1. 該当する部屋の参加者を物理削除
     const { data, error } = await supabaseClient
         .from('participants')
         .delete()
@@ -115,12 +108,20 @@ export async function clearRoomParticipants(targetRoomId) {
         .select();
 
     if (error) {
-        alert("ERROR: " + error.message);
+        console.error("削除エラー:", error.message);
         throw error;
     }
-    
-    const deleteCount = data ? data.length : 0;
-    alert("COUNT: " + deleteCount);
+
+    // 2. 部屋の手番情報（current_turn_user_id）もNULLに更新し、DBをクリーンアップ
+    const { error: roomError } = await supabaseClient
+        .from('rooms')
+        .update({ current_turn_user_id: null })
+        .eq('id', targetRoomId);
+
+    if (roomError) {
+        console.error("部屋の手番リセットエラー:", roomError.message);
+        throw roomError;
+    }
     
     return data;
 }
@@ -187,7 +188,7 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
 }
 
 /**
- * 💡【追加成功】指定したプレイヤーがすでに部屋に登録されているか確認する関数
+ * 指定したプレイヤーがすでに部屋に登録されているか確認する関数
  * @param {string} targetRoomId - 部屋ID
  * @param {string} targetUserId - プレイヤー固有ID
  * @returns {object|null} 登録されている場合はその行のデータ、ない場合はnull
@@ -207,14 +208,22 @@ export async function checkExistingParticipant(targetRoomId, targetUserId) {
     return data;
 }
 
-
 /**
- * 【新規追加】指定した部屋の特定の参加者を削除（退室処理）する関数
+ * 特定の参加者を削除（退室処理）し、必要に応じて手番を次のプレイヤーに移譲する関数
  * @param {string} targetRoomId - 部屋ID
  * @param {string} targetUserId - 削除対象のユーザーID
- * @returns {Promise<void>}
  */
 export async function deleteParticipant(targetRoomId, targetUserId) {
+    // 1. 削除前に、現在の全参加者リストを自動連番（id）順で取得し、現在の手番も確認
+    const { data: participants } = await supabaseClient
+        .from('participants')
+        .select('*')
+        .eq('room_id', targetRoomId)
+        .order('id', { ascending: true });
+        
+    const currentTurn = await getCurrentTurn(targetRoomId);
+
+    // 2. 該当ユーザーのレコードを物理削除
     const { error } = await supabaseClient
         .from('participants')
         .delete()
@@ -224,5 +233,25 @@ export async function deleteParticipant(targetRoomId, targetUserId) {
     if (error) {
         console.error('参加者削除エラー:', error);
         throw error;
+    }
+
+    // 3. 削除されたプレイヤーが現在の手番保持者であった場合の移譲ロジック
+    if (currentTurn === targetUserId && participants) {
+        // 削除対象の配列内インデックスを特定
+        const targetIndex = participants.findIndex(p => p.user_id === targetUserId);
+        let nextPlayerId = null;
+
+        if (targetIndex !== -1 && participants.length > 1) {
+            // 次のインデックスのプレイヤーが存在すれば特定（末尾なら最初のプレイヤー [0] に戻る）
+            const nextIndex = (targetIndex + 1) < participants.length ? (targetIndex + 1) : 0;
+            
+            // 選択した次の候補が自分自身（削除対象）でないことを確認してIDを設定
+            if (participants[nextIndex].user_id !== targetUserId) {
+                nextPlayerId = participants[nextIndex].user_id;
+            }
+        }
+
+        // 次の手番IDを書き込み（生存プレイヤーがいない場合は null になる）
+        await updateCurrentTurn(targetRoomId, nextPlayerId);
     }
 }
