@@ -49,7 +49,8 @@ export async function updateParticipantState(userId, newState) {
     const { data, error } = await supabaseClient
         .from('participants')
         .update({ state: newState }) // stateカラムの中身を丸ごと上書き
-        .eq('user_id', userId);      // user_id が一致する行が対象
+        .eq('user_id', userId)      // user_id が一致する行が対象
+        .select();                   // 【追加】更新後のデータを取得する指示
 
     if (error) {
         console.error('Supabase更新エラー:', error);
