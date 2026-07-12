@@ -23,51 +23,86 @@
             <button id="btn-set-turn" style="font-size: 16px; padding: 5px 10px;">を手番にする</button>
         </div>
 
-        <!-- スタイルシートを使わず、HTMLの属性だけで3x3の盤面を表現 -->
+        <!-- 24マスの直線並び盤面 -->
         <h2>すごろく盤面（リアルタイム）</h2>
         <table border="2" cellspacing="5" cellpadding="10">
-            <!-- 1行目：左上(3)、上中(2)、右上(1) -->
+            <!-- 上段：0番マス（スタート）〜 11番マス -->
             <tr height="80">
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【3】左上</div>
-                    <div id="cell-3"></div>
-                </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【2】上中</div>
-                    <div id="cell-2"></div>
-                </td>
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【1】右上</div>
-                    <div id="cell-1"></div>
-                </td>
-            </tr>
-            <!-- 2行目：左中(4)、真ん中（不使用）、右中(0:スタート) -->
-            <tr height="80">
-                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【4】左中</div>
-                    <div id="cell-4"></div>
-                </td>
-                <td width="80" align="center" valign="middle" bgcolor="#ffffff">
-                    <!-- 真ん中の空きマス -->
-                </td>
                 <td width="80" align="center" valign="middle" bgcolor="#ffeb3b">
                     <b>【0】スタート</b>
                     <div id="cell-0"></div>
                 </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【1】</div><div id="cell-1"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【2】</div><div id="cell-2"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【3】</div><div id="cell-3"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【4】</div><div id="cell-4"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【5】</div><div id="cell-5"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【6】</div><div id="cell-6"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【7】</div><div id="cell-7"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【8】</div><div id="cell-8"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【9】</div><div id="cell-9"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【10】</div><div id="cell-10"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【11】</div><div id="cell-11"></div>
+                </td>
             </tr>
-            <!-- 3行目：左下(5)、下中(6)、右下(7) -->
+            <!-- 下段：12番マス 〜 23番マス -->
             <tr height="80">
                 <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【5】left-down</div>
-                    <div id="cell-5"></div>
+                    <div>【12】</div><div id="cell-12"></div>
                 </td>
                 <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【6】下中</div>
-                    <div id="cell-6"></div>
+                    <div>【13】</div><div id="cell-13"></div>
                 </td>
                 <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
-                    <div>【7】右下</div>
-                    <div id="cell-7"></div>
+                    <div>【14】</div><div id="cell-14"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【15】</div><div id="cell-15"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【16】</div><div id="cell-16"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【17】</div><div id="cell-17"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【18】</div><div id="cell-18"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【19】</div><div id="cell-19"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【20】</div><div id="cell-20"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【21】</div><div id="cell-21"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【22】</div><div id="cell-22"></div>
+                </td>
+                <td width="80" align="center" valign="middle" bgcolor="#f0f0f0">
+                    <div>【23】</div><div id="cell-23"></div>
                 </td>
             </tr>
         </table>
@@ -86,7 +121,7 @@
                 <button id="btn-clear-room">全員を退室させる</button>
             </p>
         </fieldset>
-                
+                    
         <table border="1" style="margin-top: 10px;">
             <thead>
                 <tr>
