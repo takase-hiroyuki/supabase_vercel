@@ -9,7 +9,7 @@ const listBody = document.getElementById('host-participant-list');
 const btnClearRoom = document.getElementById('btn-clear-room');
 const hostDiceMonitor = document.getElementById('host-dice-monitor');
 
-// 💡手番設定用の入力欄（入室順）とボタン
+// 手番設定用の入力欄（入室順）とボタン
 const inputNextTurnOrder = document.getElementById('input-next-turn-order');
 const btnSetTurn = document.getElementById('btn-set-turn');
 
@@ -55,7 +55,7 @@ const updateParticipantTable = (participants) => {
     clearBoardCells();       // すごろく盤面を一旦クリア
 
     participants.forEach((p, index) => {
-        const state = p.state || { name: '未特定', join_order: 0, position: 0, role: '一般' };
+        const state = p.state || { name: '未特定', position: 0, role: '一般' };
 
         // --- A. 名簿テーブルへの描画処理（表示崩れ防止のため、列数を3列に完全統一） ---
         const tr = document.createElement('tr');
@@ -66,20 +66,33 @@ const updateParticipantTable = (participants) => {
         `;
         listBody.appendChild(tr);
 
-        // --- B. すごろく盤面へのコマ配置処理 ---
+        // --- B. すごろく盤面へのコマ配置処理（インラインスタイルを完全排除） ---
         const targetCellId = `cell-${state.position ?? 0}`;
         const cell = document.getElementById(targetCellId);
         if (cell) {
-            const piece = document.createElement('div');
-            piece.style.backgroundColor = '#00bcd4';
-            piece.style.color = 'white';
-            piece.style.padding = '2px 5px';
-            piece.style.margin = '2px 0';
-            piece.style.fontSize = '12px';
-            piece.style.display = 'inline-block';
-            piece.textContent = state.name || '不明';
+            // JSによる .style 制御を使わず、HTML標準属性のテーブル要素（またはブロック）で構造化
+            const pieceTable = document.createElement('table');
+            pieceTable.setAttribute('border', '0');
+            pieceTable.setAttribute('cellspacing', '0');
+            pieceTable.setAttribute('cellpadding', '2');
+            pieceTable.setAttribute('width', '100%');
             
-            cell.appendChild(piece);
+            const pieceTr = document.createElement('tr');
+            const pieceTd = document.createElement('td');
+            
+            pieceTd.setAttribute('bgcolor', '#00bcd4');
+            pieceTd.setAttribute('align', 'center');
+            
+            // 文字色白を表現するため標準の font タグを使用
+            const fontTag = document.createElement('font');
+            fontTag.setAttribute('color', 'white');
+            fontTag.setAttribute('size', '2');
+            fontTag.textContent = state.name || '不明';
+            
+            pieceTd.appendChild(fontTag);
+            pieceTr.appendChild(pieceTd);
+            pieceTable.appendChild(pieceTr);
+            cell.appendChild(pieceTable);
         }
     });
 
@@ -87,7 +100,7 @@ const updateParticipantTable = (participants) => {
     updateTurnDisplay();
 };
 
-// 💡 3.「を手番にする」ボタンが押された時の動き（入室順番号から特定）
+// 3.「を手番にする」ボタンが押された時の動き（配列インデックスから特定）
 if (btnSetTurn) {
     btnSetTurn.addEventListener('click', async () => {
         const orderValue = parseInt(inputNextTurnOrder.value, 10);
@@ -150,7 +163,7 @@ if (btnClearRoom) {
     });
 }
 
-// 💡【追加】特定の参加者を退室させる処理
+// 6. 特定の参加者を退室させる処理
 const btnKickParticipant = document.getElementById('btn-kick-participant');
 const inputKickOrder = document.getElementById('input-kick-order');
 
@@ -174,7 +187,7 @@ if (btnKickParticipant && inputKickOrder) {
             btnKickParticipant.disabled = true;
             btnKickParticipant.textContent = '処理中...';
 
-            // Supabase から該当ユーザーを削除
+            // Supabase から該当ユーザーを削除（手番の自動移譲は supabase.js 内で実行されます）
             await deleteParticipant(roomId, targetPlayer.user_id);
             
             inputKickOrder.value = ''; // 入力欄をクリア
