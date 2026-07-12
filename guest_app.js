@@ -5,6 +5,7 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
+import { renderGameBoard } from './guest_disp.js'; // 【変更】表示用ファイルをインポート
 
 // HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
@@ -37,7 +38,6 @@ document.getElementById('guest-room-id').textContent = roomId || "未指定";
     if (existingPlayer) {
         console.log("【初期化】登録済みのプレイヤーを検出しました。ログイン画面をスキップします:", existingPlayer);
         
-        // すでに登録されていれば、名前入力画面をスキップして直接ゲーム画面へ
         sectionLogin.style.display = 'none';
         sectionGuest.style.display = 'block';
         
@@ -45,11 +45,9 @@ document.getElementById('guest-room-id').textContent = roomId || "未指定";
         document.getElementById('guest-name').textContent = username;
         document.getElementById('guest-role').textContent = '一般（再入室）';
         
-        // リアルタイム監視を開始
         startMonitoring(existingPlayer.user_id);
     } else {
         console.log("【初期化】未登録の環境です。ログイン画面を表示します。");
-        // 未登録ならログイン画面を表示
         sectionLogin.style.display = 'block';
     }
 })();
@@ -67,22 +65,18 @@ btnLogin.addEventListener('click', async () => {
         btnLogin.disabled = true;
         btnLogin.textContent = '入室処理中...';
 
-        // join_guest.js に切り離した入室ロジックを実行
         const userId = await executeJoin(username);
         
         alert(`Supabaseへの送信が成功しました！\nプレイヤー名: ${username}\nID: ${userId}`);
         
-        // 画面をゲーム画面へ移行
         sectionLogin.style.display = 'none';
         sectionGuest.style.display = 'block';
         document.getElementById('guest-name').textContent = username;
         document.getElementById('guest-role').textContent = '一般（入室済み）';
         
-        // リアルタイム監視を開始
         startMonitoring(userId);
         
     } catch (error) {
-        // 既にユニーク制約で弾かれた場合やその他のエラー処理
         if (error.code === '23505') {
             console.log("【デバッグ】データベース側で重複登録をブロックしました。安全に画面を移行します。");
             const userId = getFromStorage('user_id');
@@ -144,7 +138,6 @@ function startMonitoring(myUserId) {
 
     // サイコロを振るボタンが押された時の処理
     btnRollDice.addEventListener('click', async () => {
-        // 現在の自分のデータをキャッシュから取得
         const myData = latestParticipants.find(p => p.user_id === myUserId);
         if (!myData || !myData.state) {
             guestDiceResult.textContent = `エラー: 自分のデータが見つかりません (myUserId: ${myUserId})`;
@@ -155,14 +148,10 @@ function startMonitoring(myUserId) {
         try {
             btnRollDice.disabled = true;
 
-            // 1. 出目を決定 (1〜6)
             const diceRoll = rollDice();
-
-            // 2. 移動後の位置を算出 (0〜7マス構造、7を超えたら周回)
             const currentPosition = myData.state.position ?? 0;
             const nextPosition = calculateNextPosition(currentPosition, diceRoll);
 
-            // 3. 更新用のstateオブジェクトを組み立てる
             const updatedState = {
                 name: myData.state.name,
                 position: nextPosition,
@@ -170,27 +159,20 @@ function startMonitoring(myUserId) {
                 last_dice: diceRoll
             };
 
-            // 送信直前の状態を出力
             guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
 
-            // 4. Supabaseへ状態を送信（アップデート）
             const dbResult = await updateParticipantState(myUserId, updatedState);
             console.log("【デバッグ・UPDATE戻り値】:", dbResult);
 
-            // 5. 【追加】手番を次のプレイヤーへ自動的に移行する処理
             if (latestParticipants.length > 0) {
-                // 現在の入室順における自分の位置（インデックス）を探す
                 const myIndex = latestParticipants.findIndex(p => p.user_id === myUserId);
-                // 次の人の位置を算出（最後のプレイヤーの場合は 0 に戻る）
                 const nextIndex = (myIndex + 1) % latestParticipants.length;
                 const nextTurnUserId = latestParticipants[nextIndex].user_id;
 
                 console.log(`【デバッグ・手番移行】次の手番IDを送信します: ${nextTurnUserId}`);
-                // データベースの rooms テーブルのcurrent_turn_user_idを更新
                 await updateCurrentTurn(roomId, nextTurnUserId);
             }
 
-            // 送信成功時の状態を出力
             guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}`;
 
         } catch (error) {
@@ -205,26 +187,8 @@ function startMonitoring(myUserId) {
         latestParticipants = participants; 
         updateTurnDisplay(); 
 
-        // すごろく盤面の表示を一度すべてクリアする
-        for (let i = 0; i <= 7; i++) {
-            const cell = document.getElementById(`cell-${i}`);
-            if (cell) cell.textContent = "";
-        }
-
-        // 参加者全員のデータをもとに、各マスへ名前を書き込む
-        participants.forEach(p => {
-            if (p.state && typeof p.state.position === 'number') {
-                const cell = document.getElementById(`cell-${p.state.position}`);
-                if (cell) {
-                    // すでに同じマスに他のプレイヤーがいる場合はカンマ区切りで追記
-                    if (cell.textContent) {
-                        cell.textContent += `, ${p.state.name}`;
-                    } else {
-                        cell.textContent = p.state.name;
-                    }
-                }
-            }
-        });
+        // 【変更】分離した外部ファイルの描画関数を実行
+        renderGameBoard(participants);
     });
 
     // 部屋状態（手番）のリアルタイム監視
