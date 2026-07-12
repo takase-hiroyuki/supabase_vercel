@@ -186,3 +186,24 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
         )
         .subscribe();
 }
+
+/**
+ * 指定したプレイヤーがすでに部屋に登録されているか確認する関数
+ * @param {string} targetRoomId - 部屋ID
+ * @param {string} targetUserId - プレイヤー固有ID
+ * @returns {object|null} 登録されている場合はその行のデータ、ない場合はnull
+ */
+export async function checkExistingParticipant(targetRoomId, targetUserId) {
+    const { data, error } = await supabaseClient
+        .from('participants')
+        .select('*')
+        .eq('room_id', targetRoomId)
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('参加者確認エラー:', error);
+        throw error;
+    }
+    return data;
+}
