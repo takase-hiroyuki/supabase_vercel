@@ -1,24 +1,47 @@
 // guest_app.js
 
-// 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
-import { saveToStorage, getFromStorage } from './storage.js';
-import { insertParticipant, subscribeToRoom, subscribeToParticipants, getCurrentTurn, updateCurrentTurn } from './supabase.js';
+import { getFromStorage } from './storage.js';
+import { subscribeToRoom, subscribeToParticipants } from './supabase.js';
+import { autoLoginCheck, executeJoin } from './join_guest.js';
 
-// 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
+// HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
 const sectionGuest = document.getElementById('section-guest');
-
 const inputUsername = document.getElementById('input-username');
 const btnLogin = document.getElementById('btn-login');
 const btnRollDice = document.getElementById('btn-roll-dice');
 const guestDiceResult = document.getElementById('guest-dice-result');
 
-// 2. 初期状態の画面セットアップ
-sectionLogin.style.display = 'block';
+// 初期状態の画面セットアップ
 document.getElementById('guest-room-id').textContent = roomId || "未指定";
 
-// 3. 「入室する」ボタンが押された時の動き
+// 【即時実行】ページ読み込み時の自動ログインチェック
+(async function init() {
+    console.log("【初期化】自動ログインチェックを開始します...");
+    const existingPlayer = await autoLoginCheck();
+
+    if (existingPlayer) {
+        console.log("【初期化】登録済みのプレイヤーを検出しました。ログイン画面をスキップします:", existingPlayer);
+        
+        // すでに登録されていれば、名前入力画面をスキップして直接ゲーム画面へ
+        sectionLogin.style.display = 'none';
+        sectionGuest.style.display = 'block';
+        
+        const username = existingPlayer.state?.name || getFromStorage('player_name') || "ゲスト";
+        document.getElementById('guest-name').textContent = username;
+        document.getElementById('guest-role').textContent = '一般（再入室）';
+        
+        // リアルタイム監視を開始
+        startMonitoring(existingPlayer.user_id);
+    } else {
+        console.log("【初期化】未登録の環境です。ログイン画面を表示します。");
+        // 未登録ならログイン画面を表示
+        sectionLogin.style.display = 'block';
+    }
+})();
+
+// 「入室する」ボタンが押された時の新規登録処理
 btnLogin.addEventListener('click', async () => {
     const username = inputUsername.value.trim();
     
@@ -27,52 +50,33 @@ btnLogin.addEventListener('click', async () => {
         return;
     }
     
-    let userId = getFromStorage('user_id');
-    if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substring(2, 11);
-        saveToStorage('user_id', userId);
-    }
-    
-    saveToStorage('player_name', username);
-    
     try {
         btnLogin.disabled = true;
         btnLogin.textContent = '入室処理中...';
 
-        // 💡【重複防止ロジック】すでにこの部屋に自分が存在しているか、最新の参加者リストを一度確認する
-        // subscribeToParticipants 内部で行っている最初の一時取得と同じ方法、または簡易チェック
-        // 今回は安全のため、一時的に確認する処理を挟むか、または名簿が空でない場合に備える
-        
-        await insertParticipant(roomId, username, userId);
-        
-        // データベース上の現在の部屋の手番を確認する
-        const currentTurn = await getCurrentTurn(roomId);
-        if (!currentTurn) {
-            await updateCurrentTurn(roomId, userId);
-            console.log("【デバッグ】最初の入室者のため、手番に設定しました:", userId);
-        }
+        // join_guest.js に切り離した入室ロジックを実行
+        const userId = await executeJoin(username);
         
         alert(`Supabaseへの送信が成功しました！\nプレイヤー名: ${username}\nID: ${userId}`);
         
+        // 画面をゲーム画面へ移行
         sectionLogin.style.display = 'none';
         sectionGuest.style.display = 'block';
         document.getElementById('guest-name').textContent = username;
         document.getElementById('guest-role').textContent = '一般（入室済み）';
         
+        // リアルタイム監視を開始
         startMonitoring(userId);
         
     } catch (error) {
-        // 💡【重複エラー時のフォールバック】
-        // もしSupabase側で一意制約（Unique）エラー、または同一IDによるエラーが出た場合は
-        // データを新規挿入せず、そのまま既存のデータを用いてゲーム画面へ進ませます。
-        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('already exists')) {
-            console.log("【デバッグ】既に同一IDで入室済みのデータを検知。そのままゲーム画面へ移行します。");
-            
+        // 既にユニーク制約で弾かれた場合やその他のエラー処理
+        if (error.code === '23505') {
+            console.log("【デバッグ】データベース側で重複登録をブロックしました。安全に画面を移行します。");
+            const userId = getFromStorage('user_id');
             sectionLogin.style.display = 'none';
             sectionGuest.style.display = 'block';
             document.getElementById('guest-name').textContent = username;
             document.getElementById('guest-role').textContent = '一般（再入室）';
-            
             startMonitoring(userId);
         } else {
             alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
@@ -126,7 +130,6 @@ function startMonitoring(myUserId) {
     };
 
     subscribeToParticipants(roomId, (participants) => {
-        console.log("参加者リストが更新されました:", participants);
         latestParticipants = participants; 
         updateTurnDisplay(); 
     });
