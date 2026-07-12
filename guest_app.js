@@ -130,11 +130,13 @@ function startMonitoring(myUserId) {
         }
     };
 
-    // サイコロを振るボタンが押された時の処理を追加
+    // サイコロを振るボタンが押された時の処理
     btnRollDice.addEventListener('click', async () => {
         // 現在の自分のデータをキャッシュから取得
         const myData = latestParticipants.find(p => p.user_id === myUserId);
         if (!myData || !myData.state) {
+            // 【デバッグ挿入】データ未検出時の状態を出力
+            guestDiceResult.textContent = `エラー: 自分のデータが見つかりません (myUserId: ${myUserId})`;
             alert('自分のプレイヤーデータが見つかりません。');
             return;
         }
@@ -157,10 +159,18 @@ function startMonitoring(myUserId) {
                 last_dice: diceRoll
             };
 
+            // 【デバッグ挿入】送信直前の状態を出力
+            guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
+
             // 4. Supabaseへ状態を送信（アップデート）
             await updateParticipantState(myUserId, updatedState);
 
+            // 【デバッグ挿入】送信成功時の状態を出力
+            guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}`;
+
         } catch (error) {
+            // 【デバッグ挿入】例外発生時の状態を出力
+            guestDiceResult.textContent = `例外発生: ${error.message || JSON.stringify(error)}`;
             alert('サイコロ処理の送信に失敗しました。');
             btnRollDice.disabled = false;
         }
