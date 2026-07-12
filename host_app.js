@@ -48,7 +48,11 @@ const updateTurnDisplay = () => {
 
 // 2. データを画面のテーブル（tbody）およびすごろく盤面に組み立てて出力する関数
 const updateParticipantTable = (participants) => {
-    console.log("【デバッグ】テーブル・盤面描画処理が走りました。データ件数:", participants.length);
+    // 【デバッグ挿入】関数が呼ばれた事実とデータの中身を出力
+    console.log("【ホストDB1】updateParticipantTableが実行されました。データ件数:", participants.length);
+    participants.forEach((p, i) => {
+        console.log(`【ホストDB2】インデックス:${i}, user_id:${p.user_id}, position:${p.state?.position}, last_dice:${p.state?.last_dice}`);
+    });
     
     latestParticipants = participants; // キャッシュを更新
     listBody.innerHTML = ''; // 名簿を一旦クリア
@@ -106,7 +110,7 @@ if (btnSetTurn) {
         const orderValue = parseInt(inputNextTurnOrder.value, 10);
 
         if (isNaN(orderValue) || orderValue < 1 || orderValue > latestParticipants.length) {
-            alert(`有効な入室順（1 から ${latestParticipants.length} の間）を入力してください。`);
+            alert(`Valid entry sequence (between 1 and ${latestParticipants.length}) is required.`);
             return;
         }
 
@@ -136,6 +140,8 @@ subscribeToParticipants(roomId, updateParticipantTable);
 
 // 部屋（手番情報）の変更をリアルタイム監視
 subscribeToRoom(roomId, (currentTurnUserId) => {
+    // 【デバッグ挿入】手番変更を受信した事実を出力
+    console.log("【ホストDB3】subscribeToRoomを受信しました。currentTurnUserId:", currentTurnUserId);
     currentTurnUserIdCache = currentTurnUserId; // 手番IDをキャッシュに保存
     updateTurnDisplay(); // 表示を更新
 });
