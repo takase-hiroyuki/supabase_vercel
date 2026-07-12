@@ -175,7 +175,8 @@ function startMonitoring(myUserId) {
             guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
 
             // 4. Supabaseへ状態を送信（アップデート）
-            await updateParticipantState(myUserId, updatedState);
+            const dbResult = await updateParticipantState(myUserId, updatedState);
+            console.log("【デバッグ・UPDATE戻り値】:", dbResult);
 
             // 【デバッグ挿入】送信成功時の状態を出力
             guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}`;
