@@ -2,8 +2,9 @@
 
 import { roomId } from './config.js';
 import { getFromStorage } from './storage.js';
-import { subscribeToRoom, subscribeToParticipants } from './supabase.js';
+import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
+import { rollDice, calculateNextPosition } from './dice.js';
 
 // HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
@@ -128,6 +129,42 @@ function startMonitoring(myUserId) {
             }
         }
     };
+
+    // サイコロを振るボタンが押された時の処理を追加
+    btnRollDice.addEventListener('click', async () => {
+        // 現在の自分のデータをキャッシュから取得
+        const myData = latestParticipants.find(p => p.user_id === myUserId);
+        if (!myData || !myData.state) {
+            alert('自分のプレイヤーデータが見つかりません。');
+            return;
+        }
+
+        try {
+            btnRollDice.disabled = true;
+
+            // 1. 出目を決定 (1〜6)
+            const diceRoll = rollDice();
+
+            // 2. 移動後の位置を算出 (0〜7マス構造、7を超えたら周回)
+            const currentPosition = myData.state.position ?? 0;
+            const nextPosition = calculateNextPosition(currentPosition, diceRoll);
+
+            // 3. 更新用のstateオブジェクトを組み立てる (データベースをキレイに保つため join_order は含めない)
+            const updatedState = {
+                name: myData.state.name,
+                position: nextPosition,
+                role: myData.state.role || '一般',
+                last_dice: diceRoll
+            };
+
+            // 4. Supabaseへ状態を送信（アップデート）
+            await updateParticipantState(myUserId, updatedState);
+
+        } catch (error) {
+            alert('サイコロ処理の送信に失敗しました。');
+            btnRollDice.disabled = false;
+        }
+    });
 
     subscribeToParticipants(roomId, (participants) => {
         latestParticipants = participants; 
