@@ -206,3 +206,23 @@ export async function checkExistingParticipant(targetRoomId, targetUserId) {
     }
     return data;
 }
+
+
+/**
+ * 【新規追加】指定した部屋の特定の参加者を削除（退室処理）する関数
+ * @param {string} targetRoomId - 部屋ID
+ * @param {string} targetUserId - 削除対象のユーザーID
+ * @returns {Promise<void>}
+ */
+export async function deleteParticipant(targetRoomId, targetUserId) {
+    const { error } = await supabaseClient
+        .from('participants')
+        .delete()
+        .eq('room_id', targetRoomId)
+        .eq('user_id', targetUserId);
+
+    if (error) {
+        console.error('参加者削除エラー:', error);
+        throw error;
+    }
+}
