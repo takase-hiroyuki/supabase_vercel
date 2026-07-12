@@ -149,3 +149,27 @@ if (btnClearRoom) {
         }
     });
 }
+
+// 💡【追加】特定の参加者を退室させる処理
+const btnKickParticipant = document.getElementById('btn-kick-participant');
+const inputKickOrder = document.getElementById('input-kick-order');
+
+if (btnKickParticipant && inputKickOrder) {
+    btnKickParticipant.addEventListener('click', async () => {
+        const orderValue = parseInt(inputKickOrder.value.trim(), 10);
+        
+        if (isNaN(orderValue) || orderValue < 1) {
+            alert('退室させる人の正しい番号を入力してください。');
+            return;
+        }
+
+        // リアルタイムで同期している現在の参加者リストから、該当する入室順のプレイヤーを探す
+        // （※現在の名簿描画ロジックにおいて、インデックス + 1 が入室順として表示されている仕様に基づきます）
+        // もしすでに latestParticipants などのリストが上部でグローバル定義されている場合はそれを利用、
+        // あるいはボタン押下時に確実に特定するため、安全に入室順のインデックスで判定します。
+        // ここでは最新のキャッシュ配列（上部で定義済みの参加者配列変数）を走査します。
+        
+        // 💡注意: host_app.js 内で参加者リストを保持している変数名（例: latestParticipants や participantsList など）
+        // の名称に合わせる必要があります。現状の host_app.js の変数定義を確認するため、まずはここまでを保存します。
+    });
+}
