@@ -5,7 +5,7 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
-import { renderGameBoard } from './guest_disp.js'; // 【変更】表示用ファイルをインポート
+import { renderGameBoard } from './guest_disp_board.js';
 
 // HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
