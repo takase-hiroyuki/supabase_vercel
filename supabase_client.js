@@ -1,10 +1,12 @@
 // supabase_client.js
 
-// config.js から接続情報をインポート
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// HTML側（CDN等）でグローバルに読み込まれている `supabase` オブジェクトを使用して、
-// 本システム専用の接続インスタンスを生成
-export const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// CDNのグローバル変数に依存せず、URLから直接 createClient をインポートして生成する
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+console.log("【デバッグ】supabase_client.js: クライアント初期化を開始します。");
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 console.log("【デバッグ】supabase_client.js: Supabaseクライアントの初期化が完了しました。");
