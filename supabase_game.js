@@ -1,7 +1,7 @@
 // supabase_game.js
 
-// 接続クライアントをインポート
-import { supabaseClient } from './supabase_client.js';
+// 接続クライアントを正確な名前でインポート
+import { supabase } from './supabase_client.js';
 
 /**
  * 指定した部屋の現在の手番（プレイヤーID）を取得する関数
@@ -9,7 +9,7 @@ import { supabaseClient } from './supabase_client.js';
  * @returns {Promise<string|null>} 現在の手番のuser_id（データがない場合はnull）
  */
 export async function getCurrentTurn(targetRoomId) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('rooms')
         .select('current_turn_user_id')
         .eq('id', targetRoomId)
@@ -28,7 +28,7 @@ export async function getCurrentTurn(targetRoomId) {
  * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
  */
 export async function updateCurrentTurn(targetRoomId, nextUserId) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('rooms')
         .upsert({ id: targetRoomId, current_turn_user_id: nextUserId })
         .select();
@@ -46,7 +46,7 @@ export async function updateCurrentTurn(targetRoomId, nextUserId) {
  */
 export async function clearRoomParticipants(targetRoomId) {
     // 1. 該当する部屋の参加者を物理削除
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('participants')
         .delete()
         .eq('room_id', targetRoomId)
@@ -58,7 +58,7 @@ export async function clearRoomParticipants(targetRoomId) {
     }
 
     // 2. 部屋の手番情報（current_turn_user_id）もNULLに更新し、DBをクリーンアップ
-    const { error: roomError } = await supabaseClient
+    const { error: roomError } = await supabase
         .from('rooms')
         .update({ current_turn_user_id: null })
         .eq('id', targetRoomId);
@@ -85,7 +85,7 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
     });
 
     // リアルタイム通信を開始して、roomsテーブルの変更を監視する
-    return supabaseClient
+    return supabase
         .channel('public:rooms')
         .on(
             'postgres_changes',
