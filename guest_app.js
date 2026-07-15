@@ -5,7 +5,8 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
-import { renderGameBoard } from './guest_disp_board.js';
+// 【変更】すごろく単体ではなく、すべての描画を司る一括更新ハブ（refreshGuestUI）をインポート
+import { refreshGuestUI } from './guest_disp.js';
 
 // HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
@@ -20,15 +21,19 @@ function displayLocalStorageStatus() {
     const storedId = getFromStorage('user_id');
     const storedName = getFromStorage('player_name');
 
-    document.getElementById('debug-storage-id').textContent = storedId ? storedId : "未定義";
-    document.getElementById('debug-storage-name').textContent = storedName ? storedName : "未定義";
+    const elId = document.getElementById('debug-storage-id');
+    const elName = document.getElementById('debug-storage-name');
+
+    if (elId) elId.textContent = storedId ? storedId : "未定義";
+    if (elName) elName.textContent = storedName ? storedName : "未定義";
 }
 
 // 実行して現在の記憶状態を表示
 displayLocalStorageStatus();
 
 // 初期状態の画面セットアップ
-document.getElementById('guest-room-id').textContent = roomId || "未指定";
+const roomEl = document.getElementById('guest-room-id');
+if (roomEl) roomEl.textContent = roomId || "未指定";
 
 // 【即時実行】ページ読み込み時の自動ログインチェック
 (async function init() {
@@ -42,8 +47,10 @@ document.getElementById('guest-room-id').textContent = roomId || "未指定";
         sectionGuest.style.display = 'block';
         
         const username = existingPlayer.state?.name || getFromStorage('player_name') || "ゲスト";
-        document.getElementById('guest-name').textContent = username;
-        document.getElementById('guest-role').textContent = '一般（再入室）';
+        const elName = document.getElementById('guest-name');
+        const elRole = document.getElementById('guest-role');
+        if (elName) elName.textContent = username;
+        if (elRole) elRole.textContent = '一般（再入室）';
         
         startMonitoring(existingPlayer.user_id);
     } else {
@@ -71,8 +78,11 @@ btnLogin.addEventListener('click', async () => {
         
         sectionLogin.style.display = 'none';
         sectionGuest.style.display = 'block';
-        document.getElementById('guest-name').textContent = username;
-        document.getElementById('guest-role').textContent = '一般（入室済み）';
+        
+        const elName = document.getElementById('guest-name');
+        const elRole = document.getElementById('guest-role');
+        if (elName) elName.textContent = username;
+        if (elRole) elRole.textContent = '一般（入室済み）';
         
         startMonitoring(userId);
         
@@ -82,8 +92,11 @@ btnLogin.addEventListener('click', async () => {
             const userId = getFromStorage('user_id');
             sectionLogin.style.display = 'none';
             sectionGuest.style.display = 'block';
-            document.getElementById('guest-name').textContent = username;
-            document.getElementById('guest-role').textContent = '一般（再入室）';
+            
+            const elName = document.getElementById('guest-name');
+            const elRole = document.getElementById('guest-role');
+            if (elName) elName.textContent = username;
+            if (elRole) elRole.textContent = '一般（再入室）';
             startMonitoring(userId);
         } else {
             alert('Supabaseへの送信に失敗しました。コンソールエラーを確認してください。');
@@ -94,46 +107,17 @@ btnLogin.addEventListener('click', async () => {
 });
 
 /**
- * 手番のリアルタイム監視を開始する関数
+ * 手番とUI全体のリアルタイム監視を開始する関数
  * @param {string} myUserId - 自分のユーザーID
  */
 function startMonitoring(myUserId) {
     let latestParticipants = []; 
     let currentTurnUserIdCache = null; 
 
-    const diceContainer = guestDiceResult.parentElement;
-
-    const updateTurnDisplay = () => {
-        if (!currentTurnUserIdCache) {
-            guestDiceResult.textContent = "手番が設定されていません";
-            btnRollDice.disabled = true;
-            if (diceContainer) {
-                diceContainer.style.backgroundColor = 'transparent';
-                diceContainer.style.padding = '0px';
-            }
-            return;
-        }
-
-        if (currentTurnUserIdCache === myUserId) {
-            guestDiceResult.textContent = "あなたの番です。ボタンを押してください";
-            btnRollDice.disabled = false;
-            
-            if (diceContainer) {
-                diceContainer.style.backgroundColor = '#fff9c4';
-                diceContainer.style.padding = '10px';
-            }
-        } else {
-            const activePlayer = latestParticipants.find(p => p.user_id === currentTurnUserIdCache);
-            const activePlayerName = activePlayer && activePlayer.state ? activePlayer.state.name : currentTurnUserIdCache;
-            
-            guestDiceResult.textContent = `現在は、${activePlayerName} の番です`;
-            btnRollDice.disabled = true;
-            
-            if (diceContainer) {
-                diceContainer.style.backgroundColor = 'transparent';
-                diceContainer.style.padding = '0px';
-            }
-        }
+    // UIを最新のデータに基づいて一括再描画する中間処理
+    const triggerUIRefresh = () => {
+        // 統合描画ハブを呼び出し、財務諸表、ポートフォリオ、すごろく盤面を一気に更新
+        refreshGuestUI(latestParticipants, currentTurnUserIdCache, myUserId);
     };
 
     // サイコロを振るボタンが押された時の処理
@@ -185,15 +169,12 @@ function startMonitoring(myUserId) {
     // 参加者のリアルタイム監視
     subscribeToParticipants(roomId, (participants) => {
         latestParticipants = participants; 
-        updateTurnDisplay(); 
-
-        // 【変更】分離した外部ファイルの描画関数を実行
-        renderGameBoard(participants);
+        triggerUIRefresh(); // UIを一括書き換え
     });
 
     // 部屋状態（手番）のリアルタイム監視
     subscribeToRoom(roomId, (currentTurnUserId) => {
         currentTurnUserIdCache = currentTurnUserId; 
-        updateTurnDisplay(); 
+        triggerUIRefresh(); // UIを一括書き換え
     });
 }
