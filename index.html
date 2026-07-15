@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- index.html >
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -35,55 +36,108 @@
 
         <hr>
 
-        <!-- 🚀サイコロエリア -->
-        <h2>サイコロ</h2>
-        <div style="font-size: 24px; margin-bottom: 10px;">
+        <!-- 🚀サイコロ・手番制御エリア -->
+        <h2>手番・サイコロ制御</h2>
+        <div id="dice-status-area">手番を確認中...</div>
+        <div style="font-size: 24px; margin-top: 10px; margin-bottom: 10px;">
             出目: <span id="guest-dice-result">⚀ (1)</span>
         </div>
-        <button id="btn-roll-dice" style="font-size: 16px; padding: 5px 15px;">サイコロを振る</button>
+        <button id="btn-roll-dice" style="font-size: 16px; padding: 5px 15px;" disabled>サイコロを振る</button>
 
         <hr>
 
-        <!-- 24マスの直線並び盤面（背景色なし） -->
+        <!-- 🚀カードドロー・取引エリア -->
+        <div id="card-display-container">
+            <fieldset>
+                <legend>ドローカード状況</legend>
+                <p>現在場に出ているカードはありません。</p>
+            </fieldset>
+        </div>
+
+        <hr>
+
+        <!-- 🚀財務諸表（PL/BS）手動計算コンテナ -->
+        <h2>財務諸表</h2>
+        <div id="financials-container">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <!-- 🚀資産ポートフォリオコンテナ -->
+        <div id="portfolio-container">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <hr>
+
+        <!-- 2層構造すごろく盤面（リアルタイム） -->
         <h2>すごろく盤面（リアルタイム）</h2>
+        
+        <h3>■ ラットレース (外周 24マス)</h3>
         <table border="2" cellspacing="5" cellpadding="10">
-            <!-- 上段：0番マス（スタート）〜 11番マス -->
-            <tr height="80">
-                <td width="80" align="center" valign="middle">
-                    <b>【0】スタート</b>
-                    <div id="cell-0"></div>
-                </td>
-                <td width="80" align="center" valign="middle"><div>【1】</div><div id="cell-1"></div></td>
-                <td width="80" align="center" valign="middle"><div>【2】</div><div id="cell-2"></div></td>
-                <td width="80" align="center" valign="middle"><div>【3】</div><div id="cell-3"></div></td>
-                <td width="80" align="center" valign="middle"><div>【4】</div><div id="cell-4"></div></td>
-                <td width="80" align="center" valign="middle"><div>【5】</div><div id="cell-5"></div></td>
-                <td width="80" align="center" valign="middle"><div>【6】</div><div id="cell-6"></div></td>
-                <td width="80" align="center" valign="middle"><div>【7】</div><div id="cell-7"></div></td>
-                <td width="80" align="center" valign="middle"><div>【8】</div><div id="cell-8"></div></td>
-                <td width="80" align="center" valign="middle"><div>【9】</div><div id="cell-9"></div></td>
-                <td width="80" align="center" valign="middle"><div>【10】</div><div id="cell-10"></div></td>
-                <td width="80" align="center" valign="middle"><div>【11】</div><div id="cell-11"></div></td>
+            <tr height="60">
+                <td width="80" align="center"><b>【0】Start</b><div id="rat-cell-0"></div></td>
+                <td width="60" align="center">【1】<div id="rat-cell-1"></div></td>
+                <td width="60" align="center">【2】<div id="rat-cell-2"></div></td>
+                <td width="60" align="center">【3】<div id="rat-cell-3"></div></td>
+                <td width="60" align="center">【4】<div id="rat-cell-4"></div></td>
+                <td width="60" align="center">【5】<div id="rat-cell-5"></div></td>
+                <td width="60" align="center">【6】<div id="rat-cell-6"></div></td>
+                <td width="60" align="center">【7】<div id="rat-cell-7"></div></td>
+                <td width="60" align="center">【8】<div id="rat-cell-8"></div></td>
+                <td width="60" align="center">【9】<div id="rat-cell-9"></div></td>
+                <td width="60" align="center">【10】<div id="rat-cell-10"></div></td>
+                <td width="60" align="center">【11】<div id="rat-cell-11"></div></td>
             </tr>
-            <!-- 下段：12番マス 〜 23番マス -->
-            <tr height="80">
-                <td width="80" align="center" valign="middle"><div>【12】</div><div id="cell-12"></div></td>
-                <td width="80" align="center" valign="middle"><div>【13】</div><div id="cell-13"></div></td>
-                <td width="80" align="center" valign="middle"><div>【14】</div><div id="cell-14"></div></td>
-                <td width="80" align="center" valign="middle"><div>【15】</div><div id="cell-15"></div></td>
-                <td width="80" align="center" valign="middle"><div>【16】</div><div id="cell-16"></div></td>
-                <td width="80" align="center" valign="middle"><div>【17】</div><div id="cell-17"></div></td>
-                <td width="80" align="center" valign="middle"><div>【18】</div><div id="cell-18"></div></td>
-                <td width="80" align="center" valign="middle"><div>【19】</div><div id="cell-19"></div></td>
-                <td width="80" align="center" valign="middle"><div>【20】</div><div id="cell-20"></div></td>
-                <td width="80" align="center" valign="middle"><div>【21】</div><div id="cell-21"></div></td>
-                <td width="80" align="center" valign="middle"><div>【22】</div><div id="cell-22"></div></td>
-                <td width="80" align="center" valign="middle"><div>【23】</div><div id="cell-23"></div></td>
+            <tr height="60">
+                <td width="60" align="center">【12】<div id="rat-cell-12"></div></td>
+                <td width="60" align="center">【13】<div id="rat-cell-13"></div></td>
+                <td width="60" align="center">【14】<div id="rat-cell-14"></div></td>
+                <td width="60" align="center">【15】<div id="rat-cell-15"></div></td>
+                <td width="60" align="center">【16】<div id="rat-cell-16"></div></td>
+                <td width="60" align="center">【17】<div id="rat-cell-17"></div></td>
+                <td width="60" align="center">【18】<div id="rat-cell-18"></div></td>
+                <td width="60" align="center">【19】<div id="rat-cell-19"></div></td>
+                <td width="60" align="center">【20】<div id="rat-cell-20"></div></td>
+                <td width="60" align="center">【21】<div id="rat-cell-21"></div></td>
+                <td width="60" align="center">【22】<div id="rat-cell-22"></div></td>
+                <td width="60" align="center">【23】<div id="rat-cell-23"></div></td>
+            </tr>
+        </table>
+
+        <h3>■ ファーストトラック (内周 24マス)</h3>
+        <table border="2" cellspacing="5" cellpadding="10">
+            <tr height="60">
+                <td width="80" align="center"><b>【0】Start</b><div id="fast-cell-0"></div></td>
+                <td width="60" align="center">【1】<div id="fast-cell-1"></div></td>
+                <td width="60" align="center">【2】<div id="fast-cell-2"></div></td>
+                <td width="60" align="center">【3】<div id="fast-cell-3"></div></td>
+                <td width="60" align="center">【4】<div id="fast-cell-4"></div></td>
+                <td width="60" align="center">【5】<div id="fast-cell-5"></div></td>
+                <td width="60" align="center">【6】<div id="fast-cell-6"></div></td>
+                <td width="60" align="center">【7】<div id="fast-cell-7"></div></td>
+                <td width="60" align="center">【8】<div id="fast-cell-8"></div></td>
+                <td width="60" align="center">【9】<div id="fast-cell-9"></div></td>
+                <td width="60" align="center">【10】<div id="fast-cell-10"></div></td>
+                <td width="60" align="center">【11】<div id="fast-cell-11"></div></td>
+            </tr>
+            <tr height="60">
+                <td width="60" align="center">【12】<div id="fast-cell-12"></div></td>
+                <td width="60" align="center">【13】<div id="fast-cell-13"></div></td>
+                <td width="60" align="center">【14】<div id="fast-cell-14"></div></td>
+                <td width="60" align="center">【15】<div id="fast-cell-15"></div></td>
+                <td width="60" align="center">【16】<div id="fast-cell-16"></div></td>
+                <td width="60" align="center">【17】<div id="fast-cell-17"></div></td>
+                <td width="60" align="center">【18】<div id="fast-cell-18"></div></td>
+                <td width="60" align="center">【19】<div id="fast-cell-19"></div></td>
+                <td width="60" align="center">【20】<div id="fast-cell-20"></div></td>
+                <td width="60" align="center">【21】<div id="fast-cell-21"></div></td>
+                <td width="60" align="center">【22】<div id="fast-cell-22"></div></td>
+                <td width="60" align="center">【23】<div id="fast-cell-23"></div></td>
             </tr>
         </table>
     </div>
 
-    <!-- ゲスト専用のメインプログラムを読み込む -->
-    <script type="module" src="./guest_app.js"></script>
+    <!-- ゲスト専用のメインプログラムを読み込む（テスト時はここを書き換えます） -->
+    <script type="module" src="./guest_app_01.js"></script>
 </body>
 </html>
