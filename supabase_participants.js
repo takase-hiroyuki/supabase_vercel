@@ -1,7 +1,7 @@
 // supabase_participants.js
 
-// 接続クライアントをインポート
-import { supabaseClient } from './supabase_client.js';
+// 接続クライアントを正確な名前でインポート
+import { supabase } from './supabase_client.js';
 
 /**
  * 参加者データをSupabaseのテーブルに送信（挿入）する関数
@@ -31,7 +31,7 @@ export async function insertParticipant(roomId, username, userId) {
     };
 
     // participants テーブルにデータを1行追加
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('participants')
         .insert([
             { 
@@ -61,7 +61,7 @@ export async function insertParticipant(roomId, username, userId) {
  * @param {object} newState - 新しい状態のJSONオブジェクト
  */
 export async function updateParticipantState(userId, newState) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('participants')
         .update({ state: newState })
         .eq('user_id', userId)
@@ -82,7 +82,7 @@ export async function updateParticipantState(userId, newState) {
  * @returns {object|null} 登録されている場合はその行のデータ、ない場合はnull
  */
 export async function checkExistingParticipant(targetRoomId, targetUserId) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('participants')
         .select('*')
         .eq('room_id', targetRoomId)
@@ -102,7 +102,7 @@ export async function checkExistingParticipant(targetRoomId, targetUserId) {
  * @param {string} targetUserId - 削除対象のユーザーID
  */
 export async function deleteParticipant(targetRoomId, targetUserId) {
-    const { error } = await supabaseClient
+    const { error } = await supabase
         .from('participants')
         .delete()
         .eq('room_id', targetRoomId)
@@ -121,7 +121,7 @@ export async function deleteParticipant(targetRoomId, targetUserId) {
  */
 export function subscribeToParticipants(targetRoomId, onUpdate) {
     // 最初の一回、現在テーブルにあるデータを自動連番（id）順に取得して描画に渡す
-    supabaseClient
+    supabase
         .from('participants')
         .select('*')
         .eq('room_id', targetRoomId)
@@ -131,7 +131,7 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
         });
 
     // リアルタイム通信を開始して、データの追加や更新を監視する
-    return supabaseClient
+    return supabase
         .channel('public:participants')
         .on(
             'postgres_changes',
@@ -139,7 +139,7 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             async (payload) => {
                 console.log("【デバッグ・Realtime受信】participants変更を検知しました:", payload);
                 // 変更があったので最新のリストを自動連番（id）順で再取得して描画関数に渡す
-                const { data } = await supabaseClient
+                const { data } = await supabase
                     .from('participants')
                     .select('*')
                     .eq('room_id', targetRoomId)
