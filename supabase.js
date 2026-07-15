@@ -1,7 +1,7 @@
 // supabase.js
 
 // 3つの分割モジュールから関数およびクライアントをインポート
-import { supabaseClient } from './supabase_client.js';
+import { supabase } from './supabase_client.js';
 import { 
     insertParticipant, 
     updateParticipantState, 
@@ -18,7 +18,7 @@ import {
 
 // ハブ（統合窓口）としてすべての関数およびクライアントを再エクスポート
 export {
-    supabaseClient,
+    supabase,
     insertParticipant,
     updateParticipantState,
     checkExistingParticipant,
