@@ -9,14 +9,14 @@ export function rollDice() {
 }
 
 /**
- * 現在の位置とサイコロの出目から、次のマス目の位置（0〜7）を計算する関数
- * @param {number} currentPosition - 現在のマス目の番号 (0〜7)
+ * 現在の位置とサイコロの出目から、次のマス目の位置（0〜23）を計算する関数
+ * @param {number} currentPosition - 現在のマス目の番号 (0〜23)
  * @param {number} diceRoll - サイコロの出目 (1〜6)
- * @returns {number} 移動後のマス目の番号 (0〜7)
+ * @returns {number} 移動後のマス目の番号 (0〜23)
  */
 export function calculateNextPosition(currentPosition, diceRoll) {
-    // 0〜7マスのループ構造。合計が8以上なら8で割った余り（0〜7）にする
-    return (currentPosition + diceRoll) % 8;
+    // 0〜23マスのループ構造。合計が24以上なら24で割った余り（0〜23）にする
+    return (currentPosition + diceRoll) % 24;
 }
 
 /**
