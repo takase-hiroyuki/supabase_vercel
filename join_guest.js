@@ -1,4 +1,5 @@
 // join_guest.js
+
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
 import { insertParticipant, getCurrentTurn, updateCurrentTurn, checkExistingParticipant } from './supabase.js';
@@ -15,7 +16,7 @@ export async function autoLoginCheck() {
     try {
         // Supabaseに直接問い合わせて、自分がすでに部屋にいるか調べる
         const existingData = await checkExistingParticipant(roomId, userId);
-        return existingData; // 存在すればデータオブジェクト、いなければnullが返る
+        return existingData; // 存在すればデータオブジェクト、いけない場合はnullが返る
     } catch (error) {
         console.error("【自動ログイン】チェック中にエラーが発生しました:", error);
         return null;
@@ -38,8 +39,19 @@ export async function executeJoin(username) {
     
     saveToStorage('player_name', username);
     
-    // データベース（Supabase）に新規登録を実行
-    await insertParticipant(roomId, username, userId);
+    try {
+        // データベース（Supabase）に新規登録を実行
+        await insertParticipant(roomId, username, userId);
+    } catch (error) {
+        // 重複入室時の一意制約違反（エラーコード: 23505）の場合は、
+        // すでに登録は完了しているため、エラーを投げずにそのまま正常系としてフォールバック処理へ進む
+        if (error.code === '23505') {
+            console.log("【デバッグ】一意制約違反を検知したため、安全にゲーム画面へフォールバックします:", userId);
+        } else {
+            // それ以外の想定外のエラーは上位へそのままスローしてクラッシュを防ぐ
+            throw error;
+        }
+    }
     
     // 現在の部屋の手番を確認し、空であれば最初の入室者を自動で手番に設定する
     const currentTurn = await getCurrentTurn(roomId);
