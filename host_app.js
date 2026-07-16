@@ -2,8 +2,9 @@
 
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
+// 【修正】コメントを実態（insertParticipant）に合わせて整理しました
 import { subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
-import { renderTurnDisplay, renderParticipantDisplay } from './host_disp.js'; // 【変更】表示用ファイルをインポート
+import { renderTurnDisplay, renderParticipantDisplay } from './host_disp.js'; // 表示用ファイルをインポート
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const listBody = document.getElementById('host-participant-list');
