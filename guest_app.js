@@ -5,7 +5,7 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
-// 【変更】すごろく単体ではなく、すべての描画を司る一括更新ハブ（refreshGuestUI）をインポート
+// 【変更】すべての描画を司る一括更新ハブ（refreshGuestUI）をインポート
 import { refreshGuestUI } from './guest_disp.js';
 
 // HTML要素の取得
@@ -116,8 +116,24 @@ function startMonitoring(myUserId) {
 
     // UIを最新のデータに基づいて一括再描画する中間処理
     const triggerUIRefresh = () => {
-        // 統合描画ハブを呼び出し、財務諸表、ポートフォリオ、すごろく盤面を一気に更新
-        refreshGuestUI(latestParticipants, currentTurnUserIdCache, myUserId);
+        // guest_disp.js の引数設計（7つ）に合わせて完全なデータを引き渡す
+        refreshGuestUI(
+            latestParticipants,       // 1. 最新の参加者リスト
+            currentTurnUserIdCache,   // 2. 手番ユーザーIDのキャッシュ
+            myUserId,                 // 3. 自分のユーザーID
+            myUserId,                 // 4. 表示対象プレイヤー（自分自身）
+            false,                    // 5. 財務計算ロック（仮でfalse）
+            null,                     // 6. 共通カード情報（未実装のため仮でnull）
+            {                         // 7. guest_disp.js が期待する各種コールバック群
+                onRollDice: () => {
+                    // btnRollDice のクリックイベントをトリガーする
+                    btnRollDice.click();
+                },
+                onVerifySuccess: () => console.log("【財務検証】成功"),
+                onVerifyFailure: () => console.log("【財務検証】失敗"),
+                onCardAction: (action) => console.log("【カードアクション】", action)
+            }
+        );
     };
 
     // サイコロを振るボタンが押された時の処理
@@ -140,7 +156,9 @@ function startMonitoring(myUserId) {
                 name: myData.state.name,
                 position: nextPosition,
                 role: myData.state.role || '一般',
-                last_dice: diceRoll
+                last_dice: diceRoll,
+                // 既存の財務・ポートフォリオデータを破損させないよう安全に維持・継承
+                financials: myData.state.financials || {}
             };
 
             guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
