@@ -4,7 +4,8 @@
  * 画面上のすごろく盤面（各マス）に配置されているコマをすべて消去する関数
  */
 export const clearBoardCells = () => {
-    for (let i = 0; i < 8; i++) {
+    // 【修正】HTML側の24マス（0〜23）に合わせて、ループ上限を 8 から 24 に変更
+    for (let i = 0; i < 24; i++) {
         const cell = document.getElementById(`cell-${i}`);
         if (cell) {
             cell.textContent = ''; // マスの中身を空にする
