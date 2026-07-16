@@ -2,7 +2,10 @@
 
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
+// 【変更】supabase.js から insertParticipantWithState をインポート（初期ステータスも一緒に登録するため）
 import { insertParticipant, getCurrentTurn, updateCurrentTurn, checkExistingParticipant } from './supabase.js';
+// 【変更】新しく作成した jobs.js からランダム職業取得関数をインポート
+import { getRandomJob } from './jobs.js';
 
 /**
  * 【自動ログイン・再入室チェック】
@@ -16,7 +19,7 @@ export async function autoLoginCheck() {
     try {
         // Supabaseに直接問い合わせて、自分がすでに部屋にいるか調べる
         const existingData = await checkExistingParticipant(roomId, userId);
-        return existingData; // 存在すればデータオブジェクト、いけない場合はnullが返る
+        return existingData; // 存在すればデータオブジェクト、存在しない場合はnullが返る
     } catch (error) {
         console.error("【自動ログイン】チェック中にエラーが発生しました:", error);
         return null;
@@ -38,10 +41,22 @@ export async function executeJoin(username) {
     }
     
     saveToStorage('player_name', username);
+
+    // 【変更】12種類の職業から1つをランダムに選出し、初期データを構築する
+    const selectedJob = getRandomJob();
+    const initialState = {
+        name: username,
+        position: 0,
+        role: selectedJob.role, // "医師"、"航空機パイロット" などの職業名
+        last_dice: 1,
+        // jobs.jsに定義された各職業個別の財務数値をここにマッピングする
+        financials: selectedJob.financials
+    };
     
     try {
         // データベース（Supabase）に新規登録を実行
-        await insertParticipant(roomId, username, userId);
+        // 引数に3つ目のパラメータ（initialState）を渡し、初期ステータス（JSONB型）を直接流し込む
+        await insertParticipant(roomId, username, userId, initialState);
     } catch (error) {
         // 重複入室時の一意制約違反（エラーコード: 23505）の場合は、
         // すでに登録は完了しているため、エラーを投げずにそのまま正常系としてフォールバック処理へ進む
