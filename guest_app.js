@@ -5,7 +5,6 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState, updateCurrentTurn } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
-// 【変更】すべての描画を司る一括更新ハブ（refreshGuestUI）をインポート
 import { refreshGuestUI } from './guest_disp.js';
 
 // HTML要素の取得
@@ -116,17 +115,15 @@ function startMonitoring(myUserId) {
 
     // UIを最新のデータに基づいて一括再描画する中間処理
     const triggerUIRefresh = () => {
-        // guest_disp.js の引数設計（7つ）に合わせて完全なデータを引き渡す
         refreshGuestUI(
-            latestParticipants,       // 1. 最新の参加者リスト
-            currentTurnUserIdCache,   // 2. 手番ユーザーIDのキャッシュ
-            myUserId,                 // 3. 自分のユーザーID
-            myUserId,                 // 4. 表示対象プレイヤー（自分自身）
-            false,                    // 5. 財務計算ロック（仮でfalse）
-            null,                     // 6. 共通カード情報（未実装のため仮でnull）
-            {                         // 7. guest_disp.js が期待する各種コールバック群
+            latestParticipants,
+            currentTurnUserIdCache,
+            myUserId,
+            myUserId,
+            false,
+            null,
+            {
                 onRollDice: () => {
-                    // btnRollDice のクリックイベントをトリガーする
                     btnRollDice.click();
                 },
                 onVerifySuccess: () => console.log("【財務検証】成功"),
@@ -152,12 +149,14 @@ function startMonitoring(myUserId) {
             const currentPosition = myData.state.position ?? 0;
             const nextPosition = calculateNextPosition(currentPosition, diceRoll);
 
+            // schema.json に完全準拠した state オブジェクトの構築
             const updatedState = {
                 name: myData.state.name,
-                position: nextPosition,
                 role: myData.state.role || '一般',
+                profession: myData.state.profession, // schema必須項目を継承
+                track: myData.state.track,           // schema必須項目を継承
+                position: nextPosition,
                 last_dice: diceRoll,
-                // 既存の財務・ポートフォリオデータを破損させないよう安全に維持・継承
                 financials: myData.state.financials || {}
             };
 
