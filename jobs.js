@@ -1,20 +1,19 @@
 // jobs.js
-// 変更点: 要件定義書のデータ構造（financials.cashflow, expenses.mortgage_payment等）に完全準拠
 
 export const JOBS_LIST = [
   {
-    role: "医師",
+    profession: "医師",
     financials: {
       cash: 400,
       cashflow: 3550,
       income: { salary: 13200, passive: 0, total: 13200 },
       expenses: { taxes: 3420, mortgage_payment: 1900, car_loan_payment: 380, other: 3950, total: 9650 },
-      liabilities: { mortgage: 202000, car_loan: 19000, retail_debt: 160000 }, // education_loan, credit_card等をretail_debtに統合
+      liabilities: { mortgage: 202000, car_loan: 19000, retail_debt: 160000 },
       assets: { stocks: {}, real_estate: {} }
     }
   },
   {
-    role: "航空機パイロット",
+    profession: "航空機パイロット",
     financials: {
       cash: 400,
       cashflow: 2600,
@@ -25,7 +24,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "弁護士",
+    profession: "弁護士",
     financials: {
       cash: 400,
       cashflow: 2080,
@@ -36,7 +35,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "エンジニア",
+    profession: "エンジニア",
     financials: {
       cash: 400,
       cashflow: 1690,
@@ -47,7 +46,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "ビジネスマネジャー",
+    profession: "ビジネスマネジャー",
     financials: {
       cash: 400,
       cashflow: 1670,
@@ -58,7 +57,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "看護婦",
+    profession: "看護婦",
     financials: {
       cash: 480,
       cashflow: 1120,
@@ -69,7 +68,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "警察官",
+    profession: "警察官",
     financials: {
       cash: 520,
       cashflow: 1120,
@@ -80,7 +79,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "教師",
+    profession: "教師",
     financials: {
       cash: 400,
       cashflow: 1110,
@@ -91,7 +90,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "秘書",
+    profession: "秘書",
     financials: {
       cash: 710,
       cashflow: 880,
@@ -102,7 +101,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "トラック運転手",
+    profession: "トラック運転手",
     financials: {
       cash: 750,
       cashflow: 880,
@@ -113,7 +112,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "機械工",
+    profession: "機械工",
     financials: {
       cash: 670,
       cashflow: 720,
@@ -124,7 +123,7 @@ export const JOBS_LIST = [
     }
   },
   {
-    role: "ビルの管理人",
+    profession: "ビルの管理人",
     financials: {
       cash: 560,
       cashflow: 650,
