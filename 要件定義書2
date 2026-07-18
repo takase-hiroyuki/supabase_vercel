@@ -28,26 +28,24 @@
       "3_1_2_join_process": [
         "入室に関するルーチンは join_guest.js に集約する。",
         "入室時、localStorage に user_id がない場合は、暗号強度を満たした一意のランダム文字列（crypto.randomUUID() 等のUUIDv4）を生成し保存する。",
-        "職業は、クライアントに用意された12種の職業スキーマ（弁護士、医師、パイロット等）から重複を回避しつつランダムに選択する。",
-        "初期データの永続化: Supabaseへのインサート処理時、選択された職業に紐づく詳細な初期財務データ（financials）一式を state JSONB内に完全な形で登録する。",
-        "一意制約の徹底: 同一IDによる多重送信が発生した場合は、DBのユニーク制約（unique_user_id）により 409 Conflict エラー（PostgreSQLエラーコード 23505）を返却し、例外処理により安全にゲーム画面へフォールバックさせる。",
+        "職業は、クライアントに用意された12種の職業スキーマからランダムに選択し、schema.json で定義された `profession` プロパティに格納する。システム権限を示す `role`（一般など）とは完全に分離する。",
+        "初期データの永続化: Supabaseへのインサート処理時、選択された職業に紐づく詳細な初期財務データ（financials）一式やトラック情報（track）を state JSONB内に完全な形で登録する。",
+        "一意制約の徹底: 同一IDによる多重送信が発生した場合は、DBのユニーク制約により例外処理へ流し、安全にゲーム画面へフォールバックさせる。",
         "初期手番設定: 入室時に部屋の current_turn_user_id が null の場合、最初に入室したユーザーIDを最初の手番として rooms に自動設定する。"
       ],
       "3_1_3_financial_statement_binding_and_validation": [
-        "完全なUIバインディング: 画面ロード時および監視イベント検知時、データベース内の state.financials から抽出した各項目（給与・不労所得・税金・各ローン支払額・手元キャッシュなど）を、入力フィールドまたは表示テキストへ即座にバインドし、入力欄が初期状態で空欄になるバグを防止する。",
+        "完全なUIバインディング: 画面ロード時および監視イベント検知時、データベース内の state.financials から抽出した各項目を、入力フィールドまたは表示テキストへ即座にバインドする。",
         "計算・入力チェックロジック: 総収入、総支出、月々のキャッシュフロー、負債合計などの合計項目は、教育的効果を目的にユーザー自身の電卓による手入力 input フィールドとする。",
         "プレイヤーが「計算チェック」ボタンを押下した際、JS内部ロジックで正確に計算された値とユーザー入力値を比較判定する。",
-        "計算結果がデータベース上の真の値と不一致（エラー）である間は、主要なアクションボタン（サイコロ、ドロー、取引、購入等）を強制的に非活性化（disabled）し警告を表示。一致を検知次第、即座にロックを解除する。"
+        "計算結果がデータベース上の真の値と不一致である間は、主要なアクションボタン（サイコロ等）を強制的に非活性化し、一致を検知次第、即座にロックを解除する。"
       ],
       "3_1_4_peer_financial_viewing": [
         "ゲストが他プレイヤーの名前をクリックすることで、財務諸表エリアの表示ソースを、該当する他プレイヤーの state.financials に切り替える。",
-        "他プレイヤーのデータ表示時はリアルタイムで追従するが、すべての input フィールドを読み取り専用（readonly）に変更し、計算チェック等のアクションを非活性化する。",
-        "「自分の財務諸表に戻る」ボタン、または自身のプレイヤー名をクリックすることで、いつでも自キャラクターの表示に復帰できる。"
+        "他プレイヤーのデータ表示時はリアルタイムで追従するが、すべての input フィールドを読み取り専用（readonly）に変更し、計算チェック等のアクションを非活性化する。"
       ],
       "3_1_5_reactive_kick_mechanism": [
         "ゲスト画面は subscribeToParticipants の削除イベント（DELETE）、もしくは参加者一覧に自身の user_id が存在しないことを検知した場合、直ちに退室処理を自動起動する。",
-        "退室起動時: 1. localStorage.clear() を実行し、ブラウザに保持されたユーザー情報、キャッシュデータを抹消。2. 保持していたメモリ上の変数を即時リセット。3. ログイン画面（section-login）へ強制遷移（または画面の全初期化リロード）を即座に実行する。",
-        "これにより、DB上にデータがない「ゾンビ状態」のクライアントが、再度アクションを行って古いIDでDBを汚染することを物理的に完全に防止する。"
+        "退室起動時: localStorage.clear() を実行してユーザー情報を抹消し、ログイン画面（section-login）へ強制遷移する。"
       ],
       "3_1_6_board_movement": [
         "サイコロを振るボタン押下時、dice.js を使用して出目を決定し、現在の所属トラック（rat_race / fast_track）に準じた新しい位置（0〜23）を算出して state を更新する。",
@@ -57,17 +55,16 @@
     "3_2_host_screen": {
       "3_2_1_realtime_board_sync": [
         "リアルタイム監視を介して参加者データを受信した際、名簿テーブル、および「ラットレース（外周24マス）」「ファーストトラック（内周24マス）」の全48マスを一旦クリアする。",
-        "最新 of state.track と state.position に従って、該当するすごろくマスの要素内にプレイヤー名（水色のネームタグ等）を再描画する。",
-        "名簿テーブルには、入室連番順（データベースの自動増分 id を基準にソート）で、プレイヤー名、ID、所属トラック、位置、および手元キャッシュ、不労所得、総支出、脱出ステータスをグリッド表示する。"
+        "最新の state.track と state.position に従って、該当するすごろくマスの要素内にプレイヤー名を再描画する。",
+        "名簿テーブルには入室連番順で、プレイヤー名、ID、位置などをグリッド表示する。"
       ],
       "3_2_2_data_reset_and_kick_control": [
-        "一括退室（部屋リセット）: ホストが「全員を退室させる」ボタンを押下した際、clearRoomParticipants を呼び出して、対象 room_id に属する participants の全データを物理削除（DELETE）し、手番情報を null にリセットする。",
-        "個別キック: 対象番号を選択し「退室させる」ボタンを押下した際、deleteParticipant により該当プレイヤーレコードをDBから物理的に削除（DELETE）する。削除対象が手番保持者であった場合、current_turn_user_id を直ちに null に初期化する。"
+        "一括退室（部屋リセット）: ホストが「全員を退室させる」ボタンを押下した際、対象 room_id に属する participants の全データを物理削除（DELETE）し、手番情報を null にリセットする。",
+        "個別キック: 対象番号を選択し「退室させる」ボタンを押下した際、該当プレイヤーレコードをDBから物理削除する。削除対象が手番保持者であった場合、current_turn_user_id を直ちに null に初期化する。"
       ],
-      "3_2_3_deck_management": [
-        "カード山札の配列、現在引かれたインデックス、および場に出されたカード情報（仮の所有権を含む current_card）の管理は、すべて rooms.game_state 内部で自動的に管理する。",
-        "山札が最後まで引き切られたことを検知した場合、ホスト画面上に「山札空警告」および「リシャッフル」ボタンを表示する。",
-        "ホストがボタンを押下することで、使用済みカードを含むすべてのカード配列がシステム側で再シャッフルされ、インデックスが 0 にリセットされ、ゲスト側のドローアクションが再有効化される。"
+      "3_2_3_card_management": [
+        "現在引き出されているカード情報（仮の所有権を含む current_card）の管理は、rooms.game_state 内部で単一の情報として管理する。",
+        "schema.json の定義に従い、status (active/completed)、deck_type、title、および各種金額情報（cost, down_payment, mortgage, passive_income）をリアルタイムでクライアントに同期させ、画面上の操作ボタンの制御等に活用する。"
       ]
     }
   },
@@ -78,29 +75,18 @@
         "id": { "type": "text", "constraint": "PRIMARY KEY", "description": "部屋識別用文字列（例: default_room）" },
         "created_at": { "type": "timestamp with time zone", "constraint": "NOT NULL DEFAULT NOW()" },
         "current_turn_user_id": { "type": "text", "constraint": "NULLABLE", "description": "現在の手番を有する user_id" },
-        "game_state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb" }
+        "game_state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb", "description": "共通のゲームステータス（引かれているカード等）" }
       },
       "game_state_json_example": {
-        "decks": {
-          "opportunity_deck": [12, 5, 24, 1],
-          "market_deck": [3, 8, 2, 11],
-          "doodads_deck": [9, 14, 1, 4]
-        },
-        "draw_indexes": {
-          "opportunity": 0,
-          "market": 0,
-          "doodads": 0
-        },
         "current_card": {
-          "card_id": "opp_15",
+          "status": "active",
+          "owner_user_id": "user_94ob3bgk4",
           "deck_type": "opportunity",
           "title": "金貨の売買機会",
           "cost": 500,
           "down_payment": 500,
           "mortgage": 0,
-          "passive_income": 0,
-          "owner_user_id": "user_94ob3bgk4",
-          "status": "pending"
+          "passive_income": 0
         }
       }
     },
@@ -111,15 +97,15 @@
         "room_id": { "type": "text", "constraint": "NOT NULL FOREIGN KEY REFERENCES rooms(id) ON DELETE CASCADE", "description": "所属する部屋のID。迷子（ゾンビ）データ防止のため Null 不可" },
         "user_id": { "type": "text", "constraint": "NOT NULL UNIQUE", "description": "プレイヤーのユニークなID。重複入室を物理的に防ぐ一意制約" },
         "created_at": { "type": "timestamp with time zone", "constraint": "NOT NULL DEFAULT NOW()" },
-        "state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb", "description": "財務諸表完全同期オブジェクト" }
+        "state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb", "description": "プレイヤーの進行状況および財務データ完全同期オブジェクト" }
       },
       "state_json_example": {
         "name": "いとう",
         "role": "一般",
+        "profession": "弁護士",
         "track": "rat_race",
         "position": 0,
         "last_dice": 0,
-        "profession": "弁護士",
         "financials": {
           "cash": 2880,
           "cashflow": 2880,
@@ -135,14 +121,14 @@
             "other": 1500,
             "total": 4620
           },
+          "assets": {
+            "stocks": {},
+            "real_estate": {}
+          },
           "liabilities": {
             "mortgage": 115000,
             "car_loan": 11000,
             "retail_debt": 1000
-          },
-          "assets": {
-            "stocks": {},
-            "real_estate": {}
           }
         }
       }
