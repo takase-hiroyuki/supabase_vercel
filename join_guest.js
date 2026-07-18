@@ -2,9 +2,7 @@
 
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
-// 【変更】supabase.js から insertParticipantWithState をインポート（初期ステータスも一緒に登録するため）
 import { insertParticipant, getCurrentTurn, updateCurrentTurn, checkExistingParticipant } from './supabase.js';
-// 【変更】新しく作成した jobs.js からランダム職業取得関数をインポート
 import { getRandomJob } from './jobs.js';
 
 /**
@@ -42,20 +40,21 @@ export async function executeJoin(username) {
     
     saveToStorage('player_name', username);
 
-    // 【変更】12種類の職業から1つをランダムに選出し、初期データを構築する
+    // 12種類の職業から1つをランダムに選出し、schema.json に完全準拠した初期データを構築する
     const selectedJob = getRandomJob();
     const initialState = {
         name: username,
+        role: "一般",
+        profession: selectedJob.profession,
+        track: "rat_race",
         position: 0,
-        role: selectedJob.role, // "医師"、"航空機パイロット" などの職業名
-        last_dice: 1,
-        // jobs.jsに定義された各職業個別の財務数値をここにマッピングする
+        last_dice: 0,
         financials: selectedJob.financials
     };
     
     try {
         // データベース（Supabase）に新規登録を実行
-        // 引数に3つ目のパラメータ（initialState）を渡し、初期ステータス（JSONB型）を直接流し込む
+        // 引数に4つ目のパラメータ（initialState）を渡し、初期ステータス（JSONB型）を直接流し込む
         await insertParticipant(roomId, username, userId, initialState);
     } catch (error) {
         // 重複入室時の一意制約違反（エラーコード: 23505）の場合は、
