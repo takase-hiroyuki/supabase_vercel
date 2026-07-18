@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cashflow Game Database Schema",
+  "description": "Supabase上のroomsテーブルおよびparticipantsテーブルの厳密なデータ構造定義",
+  "type": "object",
+  "properties": {
+    "rooms": {
+      "type": "array",
+      "description": "部屋のグローバル状態を管理するテーブル",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "部屋ID (例: default_room)" },
+          "current_turn_user_id": { "type": ["string", "null"], "description": "現在の手番プレイヤーのuser_id" },
+          "game_state": {
+            "type": "object",
+            "properties": {
+              "current_card": {
+                "type": ["object", "null"],
+                "description": "現在場に引き出されている取引カード",
+                "properties": {
+                  "status": { "type": "string", "enum": ["active", "completed"] },
+                  "owner_user_id": { "type": "string" },
+                  "deck_type": { "type": "string" },
+                  "title": { "type": "string" },
+                  "cost": { "type": "number" },
+                  "down_payment": { "type": "number" },
+                  "mortgage": { "type": "number" },
+                  "passive_income": { "type": "number" }
+                },
+                "required": ["status", "deck_type", "title", "cost", "down_payment", "mortgage", "passive_income"]
+              }
+            }
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "participants": {
+      "type": "array",
+      "description": "各プレイヤーの個別状態を管理するテーブル",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "number", "description": "自動連番" },
+          "room_id": { "type": "string" },
+          "user_id": { "type": "string", "description": "プレイヤーの固有ID" },
+          "state": {
+            "type": "object",
+            "description": "プレイヤーの進行状況および財務データ (JSONB)",
+            "properties": {
+              "name": { "type": "string", "description": "プレイヤー名" },
+              "role": { "type": "string", "enum": ["一般", "ホスト"], "description": "システム上の権限" },
+              "profession": { "type": "string", "description": "ゲーム内の職業 (例: 医師)" },
+              "track": { "type": "string", "enum": ["rat_race", "fast_track"], "description": "現在のトラック" },
+              "position": { "type": "number", "minimum": 0, "maximum": 23, "description": "0〜23のマス目位置" },
+              "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
+              "financials": {
+                "type": "object",
+                "properties": {
+                  "cash": { "type": "number" },
+                  "cashflow": { "type": "number" },
+                  "income": {
+                    "type": "object",
+                    "properties": {
+                      "salary": { "type": "number" },
+                      "passive": { "type": "number" },
+                      "total": { "type": "number" }
+                    },
+                    "required": ["salary", "passive", "total"]
+                  },
+                  "expenses": {
+                    "type": "object",
+                    "properties": {
+                      "taxes": { "type": "number" },
+                      "mortgage_payment": { "type": "number" },
+                      "car_loan_payment": { "type": "number" },
+                      "other": { "type": "number" },
+                      "total": { "type": "number" }
+                    },
+                    "required": ["taxes", "mortgage_payment", "car_loan_payment", "other", "total"]
+                  },
+                  "assets": {
+                    "type": "object",
+                    "properties": {
+                      "stocks": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "shares": { "type": "number" },
+                            "average_price": { "type": "number" }
+                          },
+                          "required": ["shares", "average_price"]
+                        }
+                      },
+                      "real_estate": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "down_payment": { "type": "number" },
+                            "cost": { "type": "number" },
+                            "passive_income": { "type": "number" }
+                          },
+                          "required": ["down_payment", "cost", "passive_income"]
+                        }
+                      }
+                    },
+                    "required": ["stocks", "real_estate"]
+                  },
+                  "liabilities": {
+                    "type": "object",
+                    "properties": {
+                      "mortgage": { "type": "number" },
+                      "car_loan": { "type": "number" },
+                      "retail_debt": { "type": "number" }
+                    },
+                    "required": ["mortgage", "car_loan", "retail_debt"]
+                  }
+                },
+                "required": ["cash", "cashflow", "income", "expenses", "assets", "liabilities"]
+              }
+            },
+            "required": ["name", "role", "profession", "track", "position", "last_dice", "financials"]
+          }
+        },
+        "required": ["room_id", "user_id", "state"]
+      }
+    }
+  },
+  "required": ["rooms", "participants"]
+}
