@@ -8,28 +8,9 @@ import { supabase } from './supabase_client.js';
  * @param {string} roomId - 部屋ID
  * @param {string} username - プレイヤー名
  * @param {string} userId - プレイヤーの固有ID
+ * @param {object} initialState - schema.json に完全準拠した初期ステータスオブジェクト
  */
-export async function insertParticipant(roomId, username, userId) {
-    // キャッシュフローゲーム用初期stateオブジェクト
-    const playerState = {
-        name: username,
-        role: "一般",
-        last_dice: 0,
-        track: "rat_race", // "rat_race" (ラットレース) または "fast_track" (ファーストトラック)
-        position: 0,       // 0〜23（各トラック24マス）
-        profession: "弁護士", // 職業名
-        financials: {
-            // 簡易損益計算書 (Income Statement)
-            income: { salary: 7500, passive: 0, total: 7500 },
-            expenses: { taxes: 1800, mortgage_payment: 1100, car_loan_payment: 220, other: 1500, total: 4620 },
-            cashflow: 2880, // 手取りキャッシュフロー (総収入 - 総支出)
-            cash: 2880,     // 手元資金
-            // 簡易貸借対照表 (Balance Sheet)
-            assets: { stocks: {}, real_estate: {} },
-            liabilities: { mortgage: 115000, car_loan: 11000, retail_debt: 1000 }
-        }
-    };
-
+export async function insertParticipant(roomId, username, userId, initialState) {
     // participants テーブルにデータを1行追加
     const { data, error } = await supabase
         .from('participants')
@@ -37,7 +18,7 @@ export async function insertParticipant(roomId, username, userId) {
             { 
                 room_id: roomId, 
                 user_id: userId, 
-                state: playerState 
+                state: initialState 
             }
         ])
         .select();
