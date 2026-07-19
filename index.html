@@ -11,41 +11,45 @@
 
     <h1>My Game (ゲスト画面)</h1>
 
-    <div id="storage-debug-info">
-        <p>【ブラウザの記憶状態】</p>
+    <fieldset id="storage-debug-info">
+        <legend>ブラウザの記憶状態</legend>
         <p>記憶されているID: <span id="debug-storage-id">確認中...</span></p>
         <p>記憶されている名前: <span id="debug-storage-name">確認中...</span></p>
-    </div>
+    </fieldset>
+
+    <br>
 
     <!-- 1. プレイヤー登録（ログイン）エリア -->
     <div id="section-login">
-        <h2>プレイヤー登録</h2>
-        <input type="text" id="input-username" placeholder="あなたの名前を入力">
-        <button id="btn-login">入室する</button>
+        <fieldset>
+            <legend>プレイヤー登録</legend>
+            <input type="text" id="input-username" placeholder="あなたの名前を入力">
+            <button id="btn-login">入室する</button>
+        </fieldset>
     </div>
 
-    <!-- 2. あなたのステータス表示エリア（入室後に表示） -->
-    <div id="section-guest" style="display: none;">
-        <h2>あなたのステータス</h2>
-        <p>部屋ID: <span id="guest-room-id">-</span></p>
-        <p>プレイヤー名: <span id="guest-name">-</span></p>
-        <div>
-            現在の役割: <span id="guest-role">確認中...</span>
-        </div>
+    <!-- 2. あなたのステータス表示エリア（入室後に表示、初期状態は hidden 属性で制御） -->
+    <div id="section-guest" hidden>
+        <fieldset>
+            <legend>あなたのステータス</legend>
+            <p>部屋ID: <span id="guest-room-id">-</span></p>
+            <p>プレイヤー名: <span id="guest-name">-</span></p>
+            <p>現在の役割: <span id="guest-role">確認中...</span></p>
+        </fieldset>
 
-        <hr>
+        <br>
 
-        <!-- 🚀サイコロ・手番制御エリア -->
-        <h2>手番・サイコロ制御</h2>
-        <div id="dice-status-area">手番を確認中...</div>
-        <div style="font-size: 24px; margin-top: 10px; margin-bottom: 10px;">
-            出目: <span id="guest-dice-result">⚀ (1)</span>
-        </div>
-        <button id="btn-roll-dice" style="font-size: 16px; padding: 5px 15px;" disabled>サイコロを振る</button>
+        <!-- サイコロ・手番制御エリア -->
+        <fieldset>
+            <legend>手番・サイコロ制御</legend>
+            <div id="dice-status-area">手番を確認中...</div>
+            <p><b>出目: <span id="guest-dice-result">⚀ (1)</span></b></p>
+            <button id="btn-roll-dice" disabled>サイコロを振る</button>
+        </fieldset>
 
-        <hr>
+        <br>
 
-        <!-- 🚀カードドロー・取引エリア -->
+        <!-- カードドロー・取引エリア -->
         <div id="card-display-container">
             <fieldset>
                 <legend>ドローカード状況</legend>
@@ -53,9 +57,9 @@
             </fieldset>
         </div>
 
-        <hr>
+        <br>
 
-        <!-- 🚀財務諸表（PL/BS）手動計算コンテナ -->
+        <!-- 財務諸表（PL/BS）手動計算コンテナ -->
         <h2>財務諸表</h2>
         <div id="financials-container">
             <fieldset>
@@ -63,35 +67,39 @@
                 <p>現在の状態: <b id="calc-lock-status">データを読み込み中...</b></p>
                 
                 <table border="1" cellspacing="0" cellpadding="5">
-                    <tr>
-                        <td>給料 (Salary)</td>
-                        <td><span id="display-salary">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>不労所得 (Passive Income)</td>
-                        <td><span id="display-passive-income">0</span></td>
-                    </tr>
-                    <tr>
-                        <td><b>【手入力】総収入 (Total Income)</b></td>
-                        <td><input type="number" id="input-total-income" placeholder="計算結果を入力"></td>
-                    </tr>
-                    <tr>
-                        <td>総支出 (Total Expenses)</td>
-                        <td><span id="display-total-expenses">0</span></td>
-                    </tr>
-                    <tr>
-                        <td><b>【手入力】毎月のキャッシュフロー</b></td>
-                        <td><input type="number" id="input-net-cashflow" placeholder="計算結果を入力"></td>
-                    </tr>
+                    <tbody>
+                        <tr>
+                            <td>給料 (Salary)</td>
+                            <td><span id="display-salary">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>不労所得 (Passive Income)</td>
+                            <td><span id="display-passive-income">0</span></td>
+                        </tr>
+                        <tr>
+                            <td><b>【手入力】総収入 (Total Income)</b></td>
+                            <td><input type="number" id="input-total-income" placeholder="計算結果を入力"></td>
+                        </tr>
+                        <tr>
+                            <td>総支出 (Total Expenses)</td>
+                            <td><span id="display-total-expenses">0</span></td>
+                        </tr>
+                        <tr>
+                            <td><b>【手入力】毎月のキャッシュフロー</b></td>
+                            <td><input type="number" id="input-net-cashflow" placeholder="計算結果を入力"></td>
+                        </tr>
+                    </tbody>
                 </table>
                 
-                <div style="margin-top: 10px;">
+                <p>
                     <button id="btn-check-calculations">計算チェック</button>
-                </div>
+                </p>
             </fieldset>
         </div>
 
-        <!-- 🚀資産ポートフォリオコンテナ -->
+        <br>
+
+        <!-- 資産ポートフォリオコンテナ -->
         <div id="portfolio-container">
             <fieldset>
                 <legend>資産・負債状況</legend>
@@ -109,73 +117,161 @@
             </fieldset>
         </div>
 
-        <hr>
+        <br>
 
         <!-- 2層構造すごろく盤面（リアルタイム） -->
         <h2>すごろく盤面（リアルタイム）</h2>
         
         <h3>■ ラットレース (外周 24マス)</h3>
         <table border="2" cellspacing="5" cellpadding="10">
-            <tr height="60">
-                <td width="30" align="center"><b>[0] Start</b><div id="rat-cell-0"></div></td>
-                <td width="30" align="center">[1]<div id="rat-cell-1"></div></td>
-                <td width="30" align="center">[2]<div id="rat-cell-2"></div></td>
-                <td width="30" align="center">[3]<div id="rat-cell-3"></div></td>
-                <td width="30" align="center">[4]<div id="rat-cell-4"></div></td>
-                <td width="30" align="center">[5]<div id="rat-cell-5"></div></td>
-                <td width="30" align="center">[6]<div id="rat-cell-6"></div></td>
-                <td width="30" align="center">[7]<div id="rat-cell-7"></div></td>
-                <td width="30" align="center">[8]<div id="rat-cell-8"></div></td>
-                <td width="30" align="center">[9]<div id="rat-cell-9"></div></td>
-                <td width="30" align="center">[10]<div id="rat-cell-10"></div></td>
-                <td width="30" align="center">[11]<div id="rat-cell-11"></div></td>
-            </tr>
-            <tr height="60">
-                <td width="30" align="center">[12]<div id="rat-cell-12"></div></td>
-                <td width="30" align="center">[13]<div id="rat-cell-13"></div></td>
-                <td width="30" align="center">[14]<div id="rat-cell-14"></div></td>
-                <td width="30" align="center">[15]<div id="rat-cell-15"></div></td>
-                <td width="30" align="center">[16]<div id="rat-cell-16"></div></td>
-                <td width="30" align="center">[17]<div id="rat-cell-17"></div></td>
-                <td width="30" align="center">[18]<div id="rat-cell-18"></div></td>
-                <td width="30" align="center">[19]<div id="rat-cell-19"></div></td>
-                <td width="30" align="center">[20]<div id="rat-cell-20"></div></td>
-                <td width="30" align="center">[21]<div id="rat-cell-21"></div></td>
-                <td width="30" align="center">[22]<div id="rat-cell-22"></div></td>
-                <td width="30" align="center">[23]<div id="rat-cell-23"></div></td>
-            </tr>
+            <thead>
+                <tr>
+                    <th colspan="12">ラットレース盤面モニター（上段：00〜11 / 下段：12〜23）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 上段：00番マス（始発）〜 11番マス（給料） -->
+                <tr>
+                    <td align="center" valign="middle" data-position="0">
+                        <b>00始発</b>
+                        <div id="rat-cell-0" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="1">
+                        <b>01無駄</b>
+                        <div id="rat-cell-1" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="2">
+                        <b>02好機</b>
+                        <div id="rat-cell-2" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="3">
+                        <b>03寄付</b>
+                        <div id="rat-cell-3" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="4">
+                        <b>04好機</b>
+                        <div id="rat-cell-4" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="5">
+                        <b>05給料</b>
+                        <div id="rat-cell-5" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="6">
+                        <b>06好機</b>
+                        <div id="rat-cell-6" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="7">
+                        <b>07無駄</b>
+                        <div id="rat-cell-7" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="8">
+                        <b>08好機</b>
+                        <div id="rat-cell-8" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="9">
+                        <b>09子供</b>
+                        <div id="rat-cell-9" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="10">
+                        <b>10好機</b>
+                        <div id="rat-cell-10" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="11">
+                        <b>11給料</b>
+                        <div id="rat-cell-11" class="player-occupants"></div>
+                    </td>
+                </tr>
+                <!-- 下段：12番マス（市場）〜 23番マス（好機） -->
+                <tr>
+                    <td align="center" valign="middle" data-position="12">
+                        <b>12市場</b>
+                        <div id="rat-cell-12" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="13">
+                        <b>13好機</b>
+                        <div id="rat-cell-13" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="14">
+                        <b>14無駄</b>
+                        <div id="rat-cell-14" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="15">
+                        <b>15好機</b>
+                        <div id="rat-cell-15" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="16">
+                        <b>16寄付</b>
+                        <div id="rat-cell-16" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="17">
+                        <b>17好機</b>
+                        <div id="rat-cell-17" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="18">
+                        <b>18給料</b>
+                        <div id="rat-cell-18" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="19">
+                        <b>19好機</b>
+                        <div id="rat-cell-19" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="20">
+                        <b>20解雇</b>
+                        <div id="rat-cell-20" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="21">
+                        <b>21好機</b>
+                        <div id="rat-cell-21" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="22">
+                        <b>22市場</b>
+                        <div id="rat-cell-22" class="player-occupants"></div>
+                    </td>
+                    <td align="center" valign="middle" data-position="23">
+                        <b>23好機</b>
+                        <div id="rat-cell-23" class="player-occupants"></div>
+                    </td>
+                </tr>
+            </tbody>
         </table>
 
         <h3>■ ファーストトラック (内周 24マス)</h3>
         <table border="2" cellspacing="5" cellpadding="10">
-            <tr height="60">
-                <td width="30" align="center"><b>[0] Start</b><div id="fast-cell-0"></div></td>
-                <td width="30" align="center">[1]<div id="fast-cell-1"></div></td>
-                <td width="30" align="center">[2]<div id="fast-cell-2"></div></td>
-                <td width="30" align="center">[3]<div id="fast-cell-3"></div></td>
-                <td width="30" align="center">[4]<div id="fast-cell-4"></div></td>
-                <td width="30" align="center">[5]<div id="fast-cell-5"></div></td>
-                <td width="30" align="center">[6]<div id="fast-cell-6"></div></td>
-                <td width="30" align="center">[7]<div id="fast-cell-7"></div></td>
-                <td width="30" align="center">[8]<div id="fast-cell-8"></div></td>
-                <td width="30" align="center">[9]<div id="fast-cell-9"></div></td>
-                <td width="30" align="center">[10]<div id="fast-cell-10"></div></td>
-                <td width="30" align="center">[11]<div id="fast-cell-11"></div></td>
-            </tr>
-            <tr height="60">
-                <td width="30" align="center">[12]<div id="fast-cell-12"></div></td>
-                <td width="30" align="center">[13]<div id="fast-cell-13"></div></td>
-                <td width="30" align="center">[14]<div id="fast-cell-14"></div></td>
-                <td width="30" align="center">[15]<div id="fast-cell-15"></div></td>
-                <td width="30" align="center">[16]<div id="fast-cell-16"></div></td>
-                <td width="30" align="center">[17]<div id="fast-cell-17"></div></td>
-                <td width="30" align="center">[18]<div id="fast-cell-18"></div></td>
-                <td width="30" align="center">[19]<div id="fast-cell-19"></div></td>
-                <td width="30" align="center">[20]<div id="fast-cell-20"></div></td>
-                <td width="30" align="center">[21]<div id="fast-cell-21"></div></td>
-                <td width="30" align="center">[22]<div id="fast-cell-22"></div></td>
-                <td width="30" align="center">[23]<div id="fast-cell-23"></div></td>
-            </tr>
+            <thead>
+                <tr>
+                    <th colspan="12">ファーストトラック盤面モニター（上段：00〜11 / 下段：12〜23）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td align="center" valign="middle"><b>[0] Start</b><div id="fast-cell-0"></div></td>
+                    <td align="center" valign="middle">[1]<div id="fast-cell-1"></div></td>
+                    <td align="center" valign="middle">[2]<div id="fast-cell-2"></div></td>
+                    <td align="center" valign="middle">[3]<div id="fast-cell-3"></div></td>
+                    <td align="center" valign="middle">[4]<div id="fast-cell-4"></div></td>
+                    <td align="center" valign="middle">[5]<div id="fast-cell-5"></div></td>
+                    <td align="center" valign="middle">[6]<div id="fast-cell-6"></div></td>
+                    <td align="center" valign="middle">[7]<div id="fast-cell-7"></div></td>
+                    <td align="center" valign="middle">[8]<div id="fast-cell-8"></div></td>
+                    <td align="center" valign="middle">[9]<div id="fast-cell-9"></div></td>
+                    <td align="center" valign="middle">[10]<div id="fast-cell-10"></div></td>
+                    <td align="center" valign="middle">[11]<div id="fast-cell-11"></div></td>
+                </tr>
+                <tr>
+                    <td align="center" valign="middle">[12]<div id="fast-cell-12"></div></td>
+                    <td align="center" valign="middle">[13]<div id="fast-cell-13"></div></td>
+                    <td align="center" valign="middle">[14]<div id="fast-cell-14"></div></td>
+                    <td align="center" valign="middle">[15]<div id="fast-cell-15"></div></td>
+                    <td align="center" valign="middle">[16]<div id="fast-cell-16"></div></td>
+                    <td align="center" valign="middle">[17]<div id="fast-cell-17"></div></td>
+                    <td align="center" valign="middle">[18]<div id="fast-cell-18"></div></td>
+                    <td align="center" valign="middle">[19]<div id="fast-cell-19"></div></td>
+                    <td align="center" valign="middle">[20]<div id="fast-cell-20"></div></td>
+                    <td align="center" valign="middle">[21]<div id="fast-cell-21"></div></td>
+                    <td align="center" valign="middle">[22]<div id="fast-cell-22"></div></td>
+                    <td align="center" valign="middle">[23]<div id="fast-cell-23"></div></td>
+                </tr>
+            </tbody>
         </table>
     </div>
 
