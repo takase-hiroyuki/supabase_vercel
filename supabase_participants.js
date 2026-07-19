@@ -1,30 +1,14 @@
 // supabase_participants.js
 
-// 接続クライアントを正確な名前でインポート
 import { supabase } from './supabase_client.js';
 
-/**
- * 参加者データをSupabaseのテーブルに送信（挿入）する関数
- * @param {string} roomId - 部屋ID
- * @param {string} username - プレイヤー名
- * @param {string} userId - プレイヤーの固有ID
- * @param {object} initialState - schema.json に完全準拠した初期ステータスオブジェクト
- */
 export async function insertParticipant(roomId, username, userId, initialState) {
-    // participants テーブルにデータを1行追加
     const { data, error } = await supabase
         .from('participants')
-        .insert([
-            { 
-                room_id: roomId, 
-                user_id: userId, 
-                state: initialState 
-            }
-        ])
+        .insert([{ room_id: roomId, user_id: userId, state: initialState }])
         .select();
     
     if (error) {
-        // 重複入室時の一意制約違反（PostgreSQL エラーコード: 23505）を検知
         if (error.code === '23505') {
             console.warn('【警告】同一IDによる重複入室を防御しました（一意制約違反を検知）:', userId);
         } else {
@@ -32,15 +16,9 @@ export async function insertParticipant(roomId, username, userId, initialState) 
         }
         throw error;
     }
-    
     return data;
 }
 
-/**
- * 特定のプレイヤーの「state（JSONデータ）」を更新する関数
- * @param {string} userId - 更新対象のプレイヤー固有ID
- * @param {object} newState - 新しい状態のJSONオブジェクト
- */
 export async function updateParticipantState(userId, newState) {
     const { data, error } = await supabase
         .from('participants')
@@ -52,16 +30,9 @@ export async function updateParticipantState(userId, newState) {
         console.error('Supabase更新エラー:', error);
         throw error;
     }
-    
     return data;
 }
 
-/**
- * 指定したプレイヤーがすでに部屋に登録されているか確認する関数
- * @param {string} targetRoomId - 部屋ID
- * @param {string} targetUserId - プレイヤー固有ID
- * @returns {object|null} 登録されている場合はその行のデータ、ない場合はnull
- */
 export async function checkExistingParticipant(targetRoomId, targetUserId) {
     const { data, error } = await supabase
         .from('participants')
@@ -77,11 +48,6 @@ export async function checkExistingParticipant(targetRoomId, targetUserId) {
     return data;
 }
 
-/**
- * 特定の参加者を削除（退室処理）する関数
- * @param {string} targetRoomId - 部屋ID
- * @param {string} targetUserId - 削除対象のユーザーID
- */
 export async function deleteParticipant(targetRoomId, targetUserId) {
     const { error } = await supabase
         .from('participants')
@@ -95,13 +61,7 @@ export async function deleteParticipant(targetRoomId, targetUserId) {
     }
 }
 
-/**
- * リアルタイムで参加者リストの変更を監視し、描画関数を実行する関数
- * @param {string} targetRoomId - 監視する部屋ID
- * @param {function} onUpdate - データ更新時に実行する描画関数
- */
 export function subscribeToParticipants(targetRoomId, onUpdate) {
-    // 最初の一回、現在テーブルにあるデータを自動連番（id）順に取得して描画に渡す
     supabase
         .from('participants')
         .select('*')
@@ -111,7 +71,6 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             if (!error && data) onUpdate(data);
         });
 
-    // リアルタイム通信を開始して、データの追加や更新を監視する
     return supabase
         .channel('public:participants')
         .on(
@@ -119,7 +78,24 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             { event: '*', schema: 'public', table: 'participants' },
             async (payload) => {
                 console.log("【デバッグ・Realtime受信】participants変更を検知しました:", payload);
-                // 変更があったので最新のリストを自動連番（id）順で再取得して描画関数に渡す
+
+                // 【追加】リセットシグナル（DELETEイベント）の検知とゾンビデータ破棄
+                if (payload.eventType === 'DELETE') {
+                    const { data: currentParticipants } = await supabase
+                        .from('participants')
+                        .select('id')
+                        .eq('room_id', targetRoomId);
+
+                    // 部屋の参加者が0人になった場合、リセットとみなしてローカルデータを破棄
+                    if (currentParticipants && currentParticipants.length === 0) {
+                        console.warn("【システム】データベースリセットを検知しました。ローカルデータを破棄します。");
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.reload(); // または window.location.href = '/' 等、初期化用URLへ遷移
+                        return; // 以降の描画処理を停止
+                    }
+                }
+
                 const { data } = await supabase
                     .from('participants')
                     .select('*')
