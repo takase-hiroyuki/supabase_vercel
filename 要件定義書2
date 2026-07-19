@@ -132,6 +132,28 @@
           }
         }
       }
+    },
+    "4_3_supabase_configuration": {
+      "description": "テーブル作成時および再初期化時には、スキーマの構築に加えて以下の設定を必ず行うこと。",
+      "settings": {
+        "realtime_enablement": {
+          "target_tables": [
+            "rooms",
+            "participants"
+          ],
+          "purpose": "クライアント側へ、サイコロの出目や位置情報などの状態変化をリアルタイムで同期・通知するため。"
+        },
+        "rls_policy": {
+          "target_tables": [
+            "rooms",
+            "participants"
+          ],
+          "purpose": "ゲストユーザー（クライアント）からの適切な読み書きアクセスを許可・制御するため。"
+        },
+        "replication_publication": {
+          "purpose": "Realtime APIが、対象テーブルのレコード変更を検知して配信できるようにするため。"
+        }
+      }
     }
   }
 }
