@@ -1,4 +1,4 @@
-// guest_app.js　司令塔
+// guest_app.js 司令塔
 
 import { roomId } from './config.js';
 import { getFromStorage } from './storage.js';
@@ -38,6 +38,17 @@ displayLocalStorageStatus();
 const roomEl = document.getElementById('guest-room-id');
 if (roomEl) roomEl.textContent = roomId || "未指定";
 
+// 🌟【ヘルパー】役割と職業テキストを安全に流し込む関数
+function updateStatusProfessionUI(state) {
+    const elRole = document.getElementById('guest-role');
+    const elProfession = document.getElementById('guest-profession');
+    
+    // 役割（role）はシステム管理上の状態
+    if (elRole) elRole.textContent = `${state?.role || '一般'}（認証済み）`;
+    // 職業（profession）は公式ルールに基づく職業名
+    if (elProfession) elProfession.textContent = state?.profession || '一般';
+}
+
 // 【即時実行】ページ読み込み時の自動ログインチェック
 (async function init() {
     console.log("【初期化】自動ログインチェックを開始します...");
@@ -49,9 +60,10 @@ if (roomEl) roomEl.textContent = roomId || "未指定";
         
         const username = existingPlayer.state?.name || getFromStorage('player_name') || "ゲスト";
         const elName = document.getElementById('guest-name');
-        const elRole = document.getElementById('guest-role');
         if (elName) elName.textContent = username;
-        if (elRole) elRole.textContent = '一般（再入室）';
+        
+        // 🌟 固定の "一般（再入室）" を廃止し、取得データから職業名をセット
+        updateStatusProfessionUI(existingPlayer.state);
         
         startMonitoring(existingPlayer.user_id);
     } else {
@@ -73,9 +85,7 @@ btnLogin.addEventListener('click', async () => {
         sectionGuest.style.display = 'block';
         
         const elName = document.getElementById('guest-name');
-        const elRole = document.getElementById('guest-role');
         if (elName) elName.textContent = username;
-        if (elRole) elRole.textContent = '一般（入室済み）';
         
         startMonitoring(userId);
     } catch (error) {
@@ -84,9 +94,8 @@ btnLogin.addEventListener('click', async () => {
             sectionLogin.style.display = 'none';
             sectionGuest.style.display = 'block';
             const elName = document.getElementById('guest-name');
-            const elRole = document.getElementById('guest-role');
             if (elName) elName.textContent = username;
-            if (elRole) elRole.textContent = '一般（再入室）';
+            
             startMonitoring(userId);
         } else {
             alert('Supabaseへの送信に失敗しました。');
@@ -109,6 +118,11 @@ function startMonitoring(myUserId) {
         const isFinancialsLocked = guestState.isFinancialsLocked();
         const isMyTurn = guestState.isMyTurn();
         const pending = guestState.getPendingSalary();
+
+        // 🌟 リアルタイム更新のタイミングでも職業・役割表示を最新状態に同期
+        if (myData && myData.state) {
+            updateStatusProfessionUI(myData.state);
+        }
 
         // 状態の変化に合わせて「サイコロを振る」ボタンの活性状態を制御
         // (自分の手番、財務ロックなし、かつサイコロ移動前のアクション待ちでない場合のみ有効)
