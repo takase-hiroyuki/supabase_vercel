@@ -4,7 +4,7 @@
 import { supabase } from './supabase_client.js';
 import { 
     insertParticipant, 
-    updateParticipantState, 
+    updateParticipantState, // 引数が仕様変更（第2引数は差分オブジェクトを受け取る）
     checkExistingParticipant, 
     deleteParticipant, 
     subscribeToParticipants 
@@ -16,11 +16,18 @@ import {
     subscribeToRoom 
 } from './supabase_game.js';
 
-// ハブ（統合窓口）としてすべての関数およびクライアントを再エクスポート
+/**
+ * @module supabase
+ * @description 各エンドポイントおよびゲームロジック用Supabase操作関数を集約するハブモジュール
+ * 
+ * 💡 注意 (データアクセス方針 5.2):
+ * updateParticipantState(userId, statePatch) は、オブジェクト全体の完全上書きを禁止しています。
+ * プレイヤー情報の更新時には、変更したいプロパティ（例: { last_dice: 3 }）のみを渡してください。
+ */
 export {
     supabase,
     insertParticipant,
-    updateParticipantState,
+    updateParticipantState, // 差分アトミック更新版
     checkExistingParticipant,
     deleteParticipant,
     subscribeToParticipants,
