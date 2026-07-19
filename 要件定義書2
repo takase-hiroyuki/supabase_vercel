@@ -25,16 +25,26 @@
       ],
       "3_1_2_join_process": [
         "入室時にUUIDv4の生成と localStorage への保存を行う。",
-        "職業および初期財務データは schema.json に基づき生成し、state JSONB に永続化する。",
+        "職業（profession）および初期財務データは jobs.js（schema.json）に基づき生成し、state JSONB に永続化する。この時、永続化されるデータは『固定のキャラクター情報（profession）』と『システム進行状態（role）』に分離して独立制御する。",
         "最初に入室したユーザーに初期手番を割り当てる。"
       ],
+      "3_1_2_x_player_role_and_profession_definitions": {
+        "description": "UIコンポーネントにおけるシステム役割（Role）とキャラクター固有データ（Profession）の分離要件。",
+        "permanent_profession_specification": "jobs.jsから割り当てられた初期職業（例：教師、機械工）を指し、ゲーム開始から終了まで不変。DOMセレクター GUEST.STATUS.PROFESSION を介して常時画面に明示される。",
+        "system_role_state_transitions": {
+          "general": "ラットレース外周を周回中の初期状態。財務諸表の筆算・検証およびロック制限を受ける。",
+          "fast_track": "不労所得が総支出を上回り内周へ移行した状態。サイコロ2個振りや取引ルールの変化が適用される。",
+          "bankrupt": "キャッシュフローがマイナスとなりゲーム継続不能となった状態。手番スキップや観客モードへの強制移行が行われる。",
+          "winner": "ファーストトラックでの勝利条件を達成した状態。ゲームクリア画面への遷移トリガーとなる。"
+        }
+      },
       "3_1_3_financial_statement_binding_and_validation": [
         "財務項目のUIバインディングおよび手入力による計算チェックを実施。",
         "財務変動発生時、state.is_calculating を true にし、該当プレイヤーの手番を強制ロック。",
-        "計算結果の一致を確認し、is_calculating を false に更新してロックを解除する。"
+        "計算結果の一致を確認し、is_calculating を false に更新してロックを解除する。ただし、新規ゲスト入室時の初期データ生成フェーズにおいては、初期化直後の game-lock 回避のため、is_calculating: false の状態でアクティブゲーム状態へ遷移させなければならない。"
       ],
       "3_1_4_peer_financial_viewing": [
-        "他プレイヤー名クリックにより、readonly 状態で財務諸表を表示。"
+        "他プレイヤー名クリックにより、readonly 状態で財務諸表を表示。この際、ホストおよびゲスト画面のリスト表示ロジック（host_disp.js, guest_disp.js）は役割（role）だけでなく職業（profession）も同時にマッピング・レンダリングする。"
       ],
       "3_1_5_reactive_kick_mechanism": [
         "Supabaseの削除イベント検知時、直ちに localStorage をクリアしログイン画面へ遷移。"
@@ -69,7 +79,7 @@
       }
     },
     "3_2_host_screen": {
-      "3_2_1_realtime_board_sync": ["state に従い全48マスと名簿テーブルをリアルタイム描画する。"],
+      "3_2_1_realtime_board_sync": ["state に従い全48マスと名簿テーブル（HOST.PARTICIPANT_ITEM に Profession カラムを包括）をリアルタイム描画する。"],
       "3_2_2_data_reset_and_kick_control": ["全員退室による物理削除、および個別キックによる対象レコード削除と手番情報の再割り当て。"],
       "3_2_3_card_management": ["rooms.game_state によるカード情報の単一管理とクライアントへの同期。"]
     }
