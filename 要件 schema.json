@@ -70,7 +70,12 @@
               "profession": { "type": "string" },
               "track": { "type": "string", "enum": ["rat_race", "fast_track"] },
               "position": { "type": "number", "minimum": 0, "maximum": 23 },
-              "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
+              "last_dice": { 
+                "type": "number", 
+                "minimum": 0, 
+                "maximum": 6,
+                "description": "プレイヤーが最後に振ったサイコロの出目。手番開始時（プリロール）に必ず 0 にリセットすること。UI側で >0 の場合は『ポストロール状態』と判定し、同一手番内の不正な再ロールを防止する厳密なトリガーとして運用する。"
+              },
               "is_calculating": { 
                 "type": "boolean", 
                 "description": "財務変動直後の手番ロックフラグ。検証成功でfalseに更新。" 
