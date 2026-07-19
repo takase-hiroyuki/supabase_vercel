@@ -19,15 +19,24 @@ export async function insertParticipant(roomId, username, userId, initialState) 
     return data;
 }
 
-export async function updateParticipantState(userId, newState) {
+/**
+ * 【排他制御対応】参加者のステート（JSONB）をアトミックに部分更新する関数
+ * オブジェクト全体の完全上書きを禁止し、差分のみをデータベース側でマージする。
+ * 
+ * @param {string} userId - 対象ユーザーのID
+ * @param {object} statePatch - 更新したいプロパティのみを格納したオブジェクト（例: { last_dice: 0 }）
+ */
+export async function updateParticipantState(userId, statePatch) {
+    // データベース側に用意するRPC 'merge_participant_state' を呼び出し、
+    // 引数として対象ユーザーIDと、差分のパッチオブジェクトを渡す
     const { data, error } = await supabase
-        .from('participants')
-        .update({ state: newState })
-        .eq('user_id', userId)
-        .select();
+        .rpc('merge_participant_state', {
+            target_user_id: userId,
+            state_patch: statePatch
+        });
 
     if (error) {
-        console.error('Supabase更新エラー:', error);
+        console.error('Supabaseアトミック更新エラー:', error);
         throw error;
     }
     return data;
@@ -79,20 +88,18 @@ export function subscribeToParticipants(targetRoomId, onUpdate) {
             async (payload) => {
                 console.log("【デバッグ・Realtime受信】participants変更を検知しました:", payload);
 
-                // 【追加】リセットシグナル（DELETEイベント）の検知とゾンビデータ破棄
                 if (payload.eventType === 'DELETE') {
                     const { data: currentParticipants } = await supabase
                         .from('participants')
                         .select('id')
                         .eq('room_id', targetRoomId);
 
-                    // 部屋の参加者が0人になった場合、リセットとみなしてローカルデータを破棄
                     if (currentParticipants && currentParticipants.length === 0) {
                         console.warn("【システム】データベースリセットを検知しました。ローカルデータを破棄します。");
                         localStorage.clear();
                         sessionStorage.clear();
-                        window.location.reload(); // または window.location.href = '/' 等、初期化用URLへ遷移
-                        return; // 以降の描画処理を停止
+                        window.location.reload();
+                        return;
                     }
                 }
 
