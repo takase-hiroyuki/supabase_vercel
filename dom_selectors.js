@@ -34,7 +34,10 @@ export const DOM_SELECTORS = {
         CONTROLS: {
             STATUS_AREA: 'dice-status-area',
             DICE_RESULT: 'guest-dice-result',
-            BTN_ROLL_DICE: 'btn-roll-dice'
+            BTN_ROLL_DICE: 'btn-roll-dice',
+            // --- 公式準拠：Paycheck手動請求用のIDを追加 ---
+            BTN_CLAIM_PAYCHECK: 'btn-claim-paycheck', // Paycheckを請求するボタン
+            BTN_END_TURN: 'btn-end-turn'              // 手番を終了するボタン
         },
 
         // カードドロー・取引エリア
