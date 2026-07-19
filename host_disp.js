@@ -4,7 +4,7 @@
  * 画面上のすごろく盤面（各マス）に配置されているコマをすべて消去する関数
  */
 export const clearBoardCells = () => {
-    // 【修正】HTML側の24マス（0〜23）に合わせて、ループ上限を 8 から 24 に変更
+    // HTML側の24マス（0〜23）に合わせて、ループ上限を 8 から 24 に変更
     for (let i = 0; i < 24; i++) {
         const cell = document.getElementById(`cell-${i}`);
         if (cell) {
@@ -42,14 +42,14 @@ export const renderParticipantDisplay = (participants, listBody) => {
     // 【デバッグ挿入】関数が呼ばれた事実とデータの中身を出力
     console.log("【ホストDB1】renderParticipantDisplayが実行されました。データ件数:", participants.length);
     participants.forEach((p, i) => {
-        console.log(`【ホストDB2】インデックス:${i}, user_id:${p.user_id}, position:${p.state?.position}, last_dice:${p.state?.last_dice}`);
+        console.log(`【ホストDB2】インデックス:${i}, user_id:${p.user_id}, position:${p.state?.position}, last_dice:${p.state?.last_dice}, profession:${p.state?.profession}`);
     });
 
     listBody.innerHTML = ''; // 名簿を一旦クリア
     clearBoardCells();       // すごろく盤面を一旦クリア
 
     participants.forEach((p, index) => {
-        const state = p.state || { name: '未特定', position: 0, role: '一般' };
+        const state = p.state || { name: '未特定', position: 0, role: '一般', profession: '一般' };
 
         // --- A. 名簿テーブルへの描画処理 ---
         const tr = document.createElement('tr');
@@ -61,9 +61,14 @@ export const renderParticipantDisplay = (participants, listBody) => {
         // データベースのスキーマ構造 (state.financials.cash) からキャッシュを取得
         const cashValue = state.financials?.cash ?? 0;
 
+        // 🌟 職業データを取得（無い場合は '一般'）
+        const professionText = state.profession || '一般';
+
+        // 🌟 内訳テーブルの列順（入室順 -> 氏名 -> 職業 -> 位置 -> キャッシュ）に合わせてTDを構築
         tr.innerHTML = `
             <td>${index + 1}</td>
             <td>${state.name || '不明'} (${p.user_id})</td>
+            <td class="host-participant-profession">${professionText}</td>
             <td>${positionText}</td>
             <td>$${cashValue.toLocaleString()}</td>
         `;
