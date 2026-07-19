@@ -54,8 +54,15 @@
               "track": { "type": "string", "enum": ["rat_race", "fast_track"], "description": "現在のトラック" },
               "position": { "type": "number", "minimum": 0, "maximum": 23, "description": "0〜23のマス目位置" },
               "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
-              "is_calculating": { "type": "boolean", "description": "財務諸表の計算・筆算の作業中（ロック状態）であるかを示すフラグ" },
-              "calculation_phase": { "type": "string", "enum": ["income_tax", "payday", "deal", "none"], "description": "現在何の計算待ちであるかのフェーズ識別子" },
+              "is_calculating": { 
+                "type": "boolean", 
+                "description": "財務諸表の計算・筆算の作業中（ロック状態）であるかを示すフラグ。財務変動（収入・支出・資産・負債の増減）があった直後の手番開始時のみ true になり、手計算の検証が成功すると false になる。財務変動がないまま次の手番を迎えた場合は false（解放状態）のまま維持される。" 
+              },
+              "calculation_phase": { 
+                "type": "string", 
+                "enum": ["income_tax", "payday", "deal", "none"], 
+                "description": "現在何の計算待ちであるかのフェーズ識別子。検証完了時や、財務変動がない手番スキップ時は 'none' となる。" 
+              },
               "financials": {
                 "type": "object",
                 "properties": {
