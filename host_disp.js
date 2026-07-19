@@ -53,15 +53,24 @@ export const renderParticipantDisplay = (participants, listBody) => {
 
         // --- A. 名簿テーブルへの描画処理 ---
         const tr = document.createElement('tr');
+        
+        // 00番マスは「00給料」、それ以外は「XX 番マス」に整形
+        const pos = state.position ?? 0;
+        const positionText = pos === 0 ? "00給料" : `${pos} 番マス`;
+
+        // データベースのスキーマ構造 (state.financials.cash) からキャッシュを取得
+        const cashValue = state.financials?.cash ?? 0;
+
         tr.innerHTML = `
             <td>${index + 1}</td>
             <td>${state.name || '不明'} (${p.user_id})</td>
-            <td>${state.position ?? 0} 番マス</td>
+            <td>${positionText}</td>
+            <td>$${cashValue.toLocaleString()}</td>
         `;
         listBody.appendChild(tr);
 
         // --- B. すごろく盤面へのコマ配置処理 ---
-        const targetCellId = `cell-${state.position ?? 0}`;
+        const targetCellId = `cell-${pos}`;
         const cell = document.getElementById(targetCellId);
         if (cell) {
             const pieceTable = document.createElement('table');
