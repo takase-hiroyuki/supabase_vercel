@@ -53,7 +53,37 @@
       "3_1_6_board_movement": [
         "サイコロを振るボタン押下時、dice.js を使用して出目を決定し、現在の所属トラック（rat_race / fast_track）に準じた新しい位置（0〜23）を算出して state を更新する。",
         "出目と更新後の state はSupabaseへ即時アップロードされる。"
-      ]
+      ],
+      "3_1_7_rat_race_tiles_specification": {
+        "payday_tile": {
+          "description": "給料日マス（通過または着地で発動）。",
+          "financial_trigger": "手持ちの『cash』に、現在の『cashflow（毎月のキャッシュフロー）』が即座に加算される。この時、PL/BSの基本構成数値に変動はないため、手番開始時の無条件な計算ロックは発生せず、解放状態（is_calculating: false）が維持される。"
+        },
+        "opportunity_tile": {
+          "description": "オポチュニティ（一獲千金のチャンス / スモールビジネス・ビッグビジネス）マス。",
+          "financial_trigger": "カードを引き、資産の購入（株、不動産等）や売却を行った場合、PL/BSの項目（不労所得、資産、負債など）が書き換わる。取引確定直後、システムは state.is_calculating = true、state.calculation_phase = 'deal' をセットし、次手番のサイコロを強制ロックする。"
+        },
+        "doodad_tile": {
+          "description": "むだ使い（ドゥーダッド）マス。",
+          "financial_trigger": "カードを引き、臨時の支出（現金減少）、またはローンによる資産なき負債の増加が発生する。手持ち現金がマイナスになり、新たなローンを組んで『expenses（支出）』が書き換わった場合、即座に state.is_calculating = true、state.calculation_phase = 'deal' をセットしてロックする。"
+        },
+        "charity_tile": {
+          "description": "慈善事業（チャリティ）マス。",
+          "financial_trigger": "総収入の10%を寄付することを選択した場合、手持ち『cash』が減少する。寄付の特典として『次ターンから3ターンの間、サイコロを2個同時に振る権利』が解放される。財務の基本構成数値に変更がないため、計算ロックは発生しない。"
+        },
+        "baby_tile": {
+          "description": "子供の誕生マス（最大3人まで）。",
+          "financial_trigger": "子供が誕生すると、職業ごとの『子供1人あたりの経費』が expenses に追加され、総支出（total expenses）および毎月のキャッシュフローが強制的に書き換わる。変動直後、システムは state.is_calculating = true、state.calculation_phase = 'deal' をセットして次手番をロックする。"
+        },
+        "downsized_tile": {
+          "description": "リストラ（失業）マス。",
+          "financial_trigger": "手持ち『cash』から、総支出（total expenses）と同額のペナルティが現金として徴収され、さらに3ターンの間手番がスキップ（行動不能）となる。財務構造自体の永続的な変更ではないため、計算ロックは発生しない。"
+        },
+        "market_tile": {
+          "description": "市場（マーケット）マス。",
+          "financial_trigger": "市場カードが引かれ、特定の資産（不動産など）を所有しているプレイヤーが売却を選択できる。売却が成立した場合、該当する資産・負債・不労所得が大幅に変動するため、取引完了と同時に state.is_calculating = true、state.calculation_phase = 'deal' に移行しロックをかける。"
+        }
+      }
     },
     "3_2_host_screen": {
       "3_2_1_realtime_board_sync": [
