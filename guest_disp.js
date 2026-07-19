@@ -43,6 +43,23 @@ export function refreshGuestUI(
         callbacks.onRollDice
     );
 
+    // ==========================================
+    // 【加筆】「あなたのステータス」欄の手持ちキャッシュをリアルタイム同期
+    // ==========================================
+    const myData = participants.find(p => p.user_id === myUserId);
+    if (myData && myData.state) {
+        // HTMLの構造に応じてID名を自動検知またはフォールバック
+        const elHandCash = document.getElementById('guest-hand-cash') 
+                        || document.getElementById('guest-cash') 
+                        || document.getElementById('display-hand-cash');
+                        
+        if (elHandCash) {
+            const currentCash = myData.state.financials?.cash ?? 0;
+            elHandCash.textContent = `$${currentCash.toLocaleString()}`;
+        }
+    }
+    // ==========================================
+
     // 4. 表示対象プレイヤーの決定と財務表示の振り分け
     const targetId = currentViewTargetId || myUserId;
     const targetUser = participants.find(p => p.user_id === targetId);
