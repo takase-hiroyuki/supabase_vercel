@@ -50,13 +50,13 @@ export async function executeJoin(username) {
 
     const initialState = {
         name: username,
-        role: "一般",
+        role: "general",                    // 🌟要件定義書に基づき、日本語からシステム識別子 "general" へ統一
         profession: selectedJob.profession, // 各自の選択された職業名（教師、パイロット等）を保持
         track: "rat_race",
         position: 0,
         last_dice: 0,
-        is_calculating: true,               // 初期状態を作業不可（ロック）にする
-        calculation_phase: "income_tax",    // 最初の筆算フェーズを指定
+        is_calculating: false,              // 🌟初期ゲームロックを完全に回避するため、入室時は作業可能（false）にする
+        calculation_phase: null,            // 🌟ゲーム開始直後は筆算フェーズではないため null に初期化
         financials: {
             ...selectedJob.financials,
             cash: correctInitialCash        // 公式ルールに基づいた初期手持ちキャッシュで上書き
