@@ -45,7 +45,14 @@
             <legend>手番・サイコロ制御</legend>
             <div id="dice-status-area">手番を確認中...</div>
             <p><b>出目: <span id="guest-dice-result">⚀ (1)</span></b></p>
-            <button id="btn-roll-dice" disabled>サイコロを振る</button>
+            <p>
+                <button id="btn-roll-dice" disabled>サイコロを振る</button>
+            </p>
+            <!-- --- 公式ルール（もらい忘れ）再現用の手動アクションボタンを追加 --- -->
+            <p id="manual-action-area">
+                <button id="btn-claim-paycheck" disabled>Paycheckを請求する</button>
+                <button id="btn-end-turn" disabled>手番を終了する</button>
+            </p>
         </fieldset>
 
         <br>
@@ -134,12 +141,10 @@
                 <!-- 上段：00番マス（ＣＦ）〜 11番マス（ＣＦ） -->
                 <tr>
                     <td align="center" valign="middle" data-position="0">
-                        <!-- 【文言変更】給料 -> ＣＦ -->
                         <b>00ＣＦ</b>
                         <div id="rat-cell-0" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="1">
-                        <!-- 【文言変更】無駄 -> 娯楽 -->
                         <b>01娯楽</b>
                         <div id="rat-cell-1" class="player-occupants"></div>
                     </td>
@@ -156,7 +161,6 @@
                         <div id="rat-cell-4" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="5">
-                        <!-- 【文言変更】給料 -> ＣＦ -->
                         <b>05ＣＦ</b>
                         <div id="rat-cell-5" class="player-occupants"></div>
                     </td>
@@ -165,7 +169,6 @@
                         <div id="rat-cell-6" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="7">
-                        <!-- 【文言変更】無駄 -> 娯楽 -->
                         <b>07娯楽</b>
                         <div id="rat-cell-7" class="player-occupants"></div>
                     </td>
@@ -182,7 +185,6 @@
                         <div id="rat-cell-10" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="11">
-                        <!-- 【文言変更】給料 -> ＣＦ -->
                         <b>11ＣＦ</b>
                         <div id="rat-cell-11" class="player-occupants"></div>
                     </td>
@@ -198,7 +200,6 @@
                         <div id="rat-cell-13" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="14">
-                        <!-- 【文言変更】無駄 -> 娯楽 -->
                         <b>14娯楽</b>
                         <div id="rat-cell-14" class="player-occupants"></div>
                     </td>
@@ -215,7 +216,6 @@
                         <div id="rat-cell-17" class="player-occupants"></div>
                     </td>
                     <td align="center" valign="middle" data-position="18">
-                        <!-- 【文言変更】給料 -> ＣＦ -->
                         <b>18ＣＦ</b>
                         <div id="rat-cell-18" class="player-occupants"></div>
                     </td>
