@@ -49,6 +49,8 @@ export async function executeJoin(username) {
         track: "rat_race",
         position: 0,
         last_dice: 0,
+        is_calculating: true,               // 新規追加: 初期状態を作業不可（ロック）にする
+        calculation_phase: "income_tax",    // 新規追加: 最初の筆算フェーズ（例: income_tax）を指定
         financials: selectedJob.financials
     };
     
