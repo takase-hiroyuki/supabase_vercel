@@ -48,17 +48,16 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
         const calculatedSalary = calculateSalaryOnMove(currentPosition, nextPosition, cashflow);
         guestState.setPendingSalary(calculatedSalary);
 
-        // 位置の更新をDBに反映
-        const updatedState = {
-            ...myData.state,
+        // 【データアクセス方針5.2.2適用】全体上書きを廃止し、差分パッチのみを構成
+        const statePatch = {
             position: nextPosition,
-            last_dice: diceRoll,
-            is_calculating: myData.state.is_calculating ?? false,
-            calculation_phase: myData.state.calculation_phase || null
+            last_dice: diceRoll
         };
 
         guestDiceResult.textContent = `移動完了: 出目=${diceRoll}, 位置=${nextPosition}。アクションを選択してください。`;
-        await updateParticipantState(guestState.myUserId, updatedState);
+        
+        // 差分パッチのみを送信してアトミックにDBマージ
+        await updateParticipantState(guestState.myUserId, statePatch);
 
         // ボタンの表示切り替え制御
         const pending = guestState.getPendingSalary();
@@ -91,8 +90,11 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
         const currentFinancials = myData.state.financials || {};
         const currentCash = currentFinancials.cash ?? 0;
 
-        const updatedState = {
-            ...myData.state,
+        // 【データアクセス方針5.2.2適用】
+        // 財務データ全体を上書きするのではなく、financialsオブジェクト内のcashを安全に合流させるための入れ子パッチ
+        // ※Supabase側の merge_participant_state RPCは第一階層をマージするため、
+        // financials全体を組み立て直して渡します（他のプレイヤーがプレイヤー本人のfinancialsを弄ることはないため安全です）
+        const statePatch = {
             financials: {
                 ...currentFinancials,
                 cash: currentCash + pending
@@ -103,7 +105,8 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
         guestState.clearPendingSalary(); // 請求完了したので状態をクリア
         btnClaimPaycheck.textContent = `Paycheckを請求する`;
 
-        await updateParticipantState(guestState.myUserId, updatedState);
+        // 差分パッチを送信
+        await updateParticipantState(guestState.myUserId, statePatch);
 
     } catch (error) {
         alert('Paycheckの請求処理に失敗しました。');
