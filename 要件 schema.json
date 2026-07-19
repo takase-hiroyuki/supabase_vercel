@@ -1,23 +1,43 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Cashflow Game Database Schema",
-  "description": "Supabase上のroomsテーブルおよびparticipantsテーブルの厳密なデータ構造定義",
+  "title": "Cashflow Game Database Schema (Updated)",
+  "description": "Supabase上のroomsテーブルおよびparticipantsテーブルの厳密なデータ構造と、給料日マスの通過判定ロジック定義",
   "type": "object",
   "properties": {
+    "board_settings": {
+      "type": "object",
+      "description": "ゲームの盤面設定およびルール定義",
+      "properties": {
+        "rat_race": {
+          "type": "object",
+          "properties": {
+            "payday_cells": { 
+              "type": "array", 
+              "items": { "type": "number" }, 
+              "default": [0, 5, 11, 18],
+              "description": "給料日マスの位置（0-23）"
+            },
+            "payday_rule": { 
+              "type": "string", 
+              "enum": ["passing_or_landing"],
+              "description": "通過または着地で発動するルール定義"
+            }
+          }
+        }
+      }
+    },
     "rooms": {
       "type": "array",
-      "description": "部屋のグローバル状態を管理するテーブル",
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "部屋ID (例: default_room)" },
-          "current_turn_user_id": { "type": ["string", "null"], "description": "現在の手番プレイヤーのuser_id" },
+          "id": { "type": "string" },
+          "current_turn_user_id": { "type": ["string", "null"] },
           "game_state": {
             "type": "object",
             "properties": {
               "current_card": {
                 "type": ["object", "null"],
-                "description": "現在場に引き出されている取引カード",
                 "properties": {
                   "status": { "type": "string", "enum": ["active", "completed"] },
                   "owner_user_id": { "type": "string" },
@@ -27,8 +47,7 @@
                   "down_payment": { "type": "number" },
                   "mortgage": { "type": "number" },
                   "passive_income": { "type": "number" }
-                },
-                "required": ["status", "deck_type", "title", "cost", "down_payment", "mortgage", "passive_income"]
+                }
               }
             }
           }
@@ -37,48 +56,32 @@
     },
     "participants": {
       "type": "array",
-      "description": "各プレイヤーの個別状態を管理するテーブル",
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "number", "description": "自動連番" },
+          "id": { "type": "number" },
           "room_id": { "type": "string" },
-          "user_id": { "type": "string", "description": "プレイヤーの固有ID" },
+          "user_id": { "type": "string" },
           "state": {
             "type": "object",
-            "description": "プレイヤーの進行状況および財務データ (JSONB)",
             "properties": {
-              "name": { "type": "string", "description": "プレイヤー名" },
-              "role": { "type": "string", "enum": ["一般", "ホスト"], "description": "システム上の権限" },
-              "profession": { "type": "string", "description": "ゲーム内の職業 (例: 医師)" },
-              "track": { "type": "string", "enum": ["rat_race", "fast_track"], "description": "現在のトラック" },
-              "position": { "type": "number", "minimum": 0, "maximum": 23, "description": "0〜23のマス目位置" },
+              "name": { "type": "string" },
+              "role": { "type": "string", "enum": ["一般", "ホスト"] },
+              "profession": { "type": "string" },
+              "track": { "type": "string", "enum": ["rat_race", "fast_track"] },
+              "position": { "type": "number", "minimum": 0, "maximum": 23 },
               "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
               "is_calculating": { 
                 "type": "boolean", 
-                "description": "財務諸表の計算・筆算の作業中（ロック状態）であるかを示すフラグ。財務変動（収入・支出・資産・負債の増減）があった直後の手番開始時のみ true になり、手計算の検証が成功すると false になる。財務変動がないまま次の手番を迎えた場合は false（解放状態）のまま維持される。" 
+                "description": "財務変動直後の手番ロックフラグ。検証成功でfalseに更新。" 
               },
               "calculation_phase": { 
                 "type": "string", 
-                "enum": ["income_tax", "payday", "deal", "none"], 
-                "description": "現在何の計算待ちであるかのフェーズ識別子。検証完了時や、財務変動がない手番スキップ時は 'none' となる。" 
+                "enum": ["income_tax", "payday", "deal", "none"] 
               },
-              "children_count": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 3,
-                "description": "現在の子供の人数。上限値は3人。"
-              },
-              "charity_turns_left": {
-                "type": "number",
-                "minimum": 0,
-                "description": "チャリティ効果（サイコロを2個振る権利）の残りターン数。通常手番ごとに1減少し、0で効果終了。"
-              },
-              "downsized_turns_left": {
-                "type": "number",
-                "minimum": 0,
-                "description": "リストラによる手番スキップの残りターン数。0より大きい場合は手番が自動的にスキップされ、手番消費時に1減少する。"
-              },
+              "children_count": { "type": "number", "minimum": 0, "maximum": 3 },
+              "charity_turns_left": { "type": "number", "minimum": 0 },
+              "downsized_turns_left": { "type": "number", "minimum": 0 },
               "financials": {
                 "type": "object",
                 "properties": {
@@ -90,8 +93,7 @@
                       "salary": { "type": "number" },
                       "passive": { "type": "number" },
                       "total": { "type": "number" }
-                    },
-                    "required": ["salary", "passive", "total"]
+                    }
                   },
                   "expenses": {
                     "type": "object",
@@ -101,37 +103,14 @@
                       "car_loan_payment": { "type": "number" },
                       "other": { "type": "number" },
                       "total": { "type": "number" }
-                    },
-                    "required": ["taxes", "mortgage_payment", "car_loan_payment", "other", "total"]
+                    }
                   },
                   "assets": {
                     "type": "object",
                     "properties": {
-                      "stocks": {
-                        "type": "object",
-                        "additionalProperties": {
-                          "type": "object",
-                          "properties": {
-                            "shares": { "type": "number" },
-                            "average_price": { "type": "number" }
-                          },
-                          "required": ["shares", "average_price"]
-                        }
-                      },
-                      "real_estate": {
-                        "type": "object",
-                        "additionalProperties": {
-                          "type": "object",
-                          "properties": {
-                            "down_payment": { "type": "number" },
-                            "cost": { "type": "number" },
-                            "passive_income": { "type": "number" }
-                          },
-                          "required": ["down_payment", "cost", "passive_income"]
-                        }
-                      }
-                    },
-                    "required": ["stocks", "real_estate"]
+                      "stocks": { "type": "object" },
+                      "real_estate": { "type": "object" }
+                    }
                   },
                   "liabilities": {
                     "type": "object",
@@ -139,19 +118,15 @@
                       "mortgage": { "type": "number" },
                       "car_loan": { "type": "number" },
                       "retail_debt": { "type": "number" }
-                    },
-                    "required": ["mortgage", "car_loan", "retail_debt"]
+                    }
                   }
-                },
-                "required": ["cash", "cashflow", "income", "expenses", "assets", "liabilities"]
+                }
               }
-            },
-            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "calculation_phase", "children_count", "charity_turns_left", "downsized_turns_left", "financials"]
+            }
           }
-        },
-        "required": ["room_id", "user_id", "state"]
+        }
       }
     }
   },
-  "required": ["rooms", "participants"]
+  "required": ["board_settings", "rooms", "participants"]
 }
