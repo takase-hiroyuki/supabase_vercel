@@ -7,6 +7,9 @@ import { renderPortfolio } from './guest_disp_portfolio.js';
 import { renderCurrentCard } from './guest_disp_card.js';
 import { updateGameControls } from './guest_disp_controls.js';
 
+// 【追加】DOMセレクター一括管理ファイルのインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
+
 /**
  * 【ゲストUIハブ】
  * リアルタイム同期で受け取った全てのデータ分配と状態遷移を制御する
@@ -48,14 +51,12 @@ export function refreshGuestUI(
     // ==========================================
     const myData = participants.find(p => p.user_id === myUserId);
     if (myData && myData.state) {
-        // HTMLの構造に応じてID名を自動検知またはフォールバック
-        const elHandCash = document.getElementById('guest-hand-cash') 
-                        || document.getElementById('guest-cash') 
-                        || document.getElementById('display-hand-cash');
-                        
+        // dom_selectors.js に定義した正確なID（'display-current-cash'）でHTML要素を取得
+        const elHandCash = document.getElementById(DOM_SELECTORS.GUEST.STATUS.DISPLAY_CURRENT_CASH);
         if (elHandCash) {
             const currentCash = myData.state.financials?.cash ?? 0;
-            elHandCash.textContent = `$${currentCash.toLocaleString()}`;
+            // 3桁カンマ区切りで数値をテキストへ流し込む
+            elHandCash.textContent = currentCash.toLocaleString();
         }
     }
     // ==========================================
