@@ -7,6 +7,31 @@ import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { rollDice, calculateNextPosition } from './dice.js';
 import { refreshGuestUI } from './guest_disp.js';
 
+// --- 給料日マスの配置定義（要件定義書およびschema.jsonに準拠） ---
+const PAYDAY_CELLS = [0, 5, 11, 18];
+
+/**
+ * 24マス循環を考慮し、移動経路中に通過または着地した給料日の総支給額を算出する
+ * @param {number} oldPos - 移動前の位置（0〜23）
+ * @param {number} newPos - 移動後の位置（0〜23）
+ * @param {number} cashflow - 毎月のキャッシュフロー額
+ * @returns {number} 支給される合計金額
+ */
+function calculateSalaryOnMove(oldPos, newPos, cashflow) {
+    let payCount = 0;
+    // 24マスの環状構造における順方向の総移動マス数を計算
+    const diff = (newPos - oldPos + 24) % 24;
+    
+    // 1マス進んだ先から到着マスまで、順に給料日設定を跨いだか走査
+    for (let i = 1; i <= diff; i++) {
+        let checkPos = (oldPos + i) % 24;
+        if (PAYDAY_CELLS.includes(checkPos)) {
+            payCount++;
+        }
+    }
+    return payCount * cashflow;
+}
+
 // HTML要素の取得
 const sectionLogin = document.getElementById('section-login');
 const sectionGuest = document.getElementById('section-guest');
@@ -172,21 +197,29 @@ function startMonitoring(myUserId) {
             const currentPosition = myData.state.position ?? 0;
             const nextPosition = calculateNextPosition(currentPosition, diceRoll);
 
-            // schema.json に完全準拠した state オブジェクトの構築
+            // --- 給料日跨ぎの経済処理アルゴリズムの適用 ---
+            const currentFinancials = myData.state.financials || {};
+            const cashflow = currentFinancials.cashflow ?? 0;
+            const currentCash = currentFinancials.cash ?? 0;
+            
+            // 移動経路中の給料発生額を算出
+            const salaryEarned = calculateSalaryOnMove(currentPosition, nextPosition, cashflow);
+
+            // schema.json に完全準拠した state オブジェクトの構築と不変更新
             const updatedState = {
-                name: myData.state.name,
-                role: myData.state.role || '一般',
-                profession: myData.state.profession, 
-                track: myData.state.track,           
+                ...myData.state,
                 position: nextPosition,
                 last_dice: diceRoll,
-                financials: myData.state.financials || {},
-                // 3. サイコロ移動時に計算フラグの状態を安全に継承
+                financials: {
+                    ...currentFinancials,
+                    cash: currentCash + salaryEarned // 計算された給料を反映
+                },
+                // サイコロ移動時に計算フラグの状態を安全に継承
                 is_calculating: myData.state.is_calculating ?? false,
                 calculation_phase: myData.state.calculation_phase || null
             };
 
-            guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
+            guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, 給料加算=$${salaryEarned}`;
 
             const dbResult = await updateParticipantState(myUserId, updatedState);
             console.log("【デバッグ・UPDATE戻り値】:", dbResult);
@@ -200,7 +233,7 @@ function startMonitoring(myUserId) {
                 await updateCurrentTurn(roomId, nextTurnUserId);
             }
 
-            guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}`;
+            guestDiceResult.textContent = `送信成功: 出目=${diceRoll}, 位置=${nextPosition}, 給料加算=$${salaryEarned}`;
 
         } catch (error) {
             guestDiceResult.textContent = `例外発生: ${error.message || JSON.stringify(error)}`;
