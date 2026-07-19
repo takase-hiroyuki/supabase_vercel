@@ -27,7 +27,8 @@ export const DOM_SELECTORS = {
             ROOM_ID: 'guest-room-id',
             NAME: 'guest-name',
             DISPLAY_CURRENT_CASH: 'display-current-cash', // ★ $0 問題のターゲットID
-            ROLE: 'guest-role'
+            ROLE: 'guest-role',
+            PROFESSION: 'guest-profession' // 🌟【追加】ゲスト画面に職業名（教師・パイロット等）を表示する用
         },
 
         // 手番・サイコロ制御エリア
@@ -99,6 +100,12 @@ export const DOM_SELECTORS = {
 
         // 参加者名簿テーブル
         PARTICIPANT_LIST: 'host-participant-list',
+        
+        // 🌟【追加】名簿の各行（DOM行生成時やセレクター特定用）で利用するクラス・属性の識別子
+        PARTICIPANT_ITEM: {
+            ROW_CLASS: 'host-participant-row',
+            PROFESSION_CLASS: 'host-participant-profession' 
+        },
 
         // ホスト用盤面モニターID生成用のプレフィックス
         BOARD: {
