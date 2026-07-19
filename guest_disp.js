@@ -37,19 +37,24 @@ export function refreshGuestUI(
     const turnUser = participants.find(p => p.user_id === currentTurnUserId);
     const turnUserName = turnUser ? turnUser.state.name : null;
 
+    // 🌟【加筆】厳密なフェーズ制御（プリロール/ポストロール判断）のため自身のstateを取得
+    const myData = participants.find(p => p.user_id === myUserId);
+    const myState = myData ? myData.state : null;
+
     // 3. 操作ボタン類の活性・非活性および手番インジケータ制御
+    // 🌟【変更】第5引数に myState を追加し、コントロール側に最新のロール状態を同期する
     updateGameControls(
         currentTurnUserId, 
         myUserId, 
         turnUserName, 
         isFinancialsLocked, 
+        myState,
         callbacks.onRollDice
     );
 
     // ==========================================
     // 【加筆】「あなたのステータス」欄（キャッシュ ＆ 職業名）のリアルタイム同期
     // ==========================================
-    const myData = participants.find(p => p.user_id === myUserId);
     if (myData && myData.state) {
         // ① 手持ちキャッシュの同期
         const elHandCash = document.getElementById(DOM_SELECTORS.GUEST.STATUS.DISPLAY_CURRENT_CASH);
