@@ -62,7 +62,7 @@ function updateStatusProfessionUI(state) {
         const elName = document.getElementById('guest-name');
         if (elName) elName.textContent = username;
         
-        // 🌟 固定の "一般（再入室）" を廃止し、取得データから職業名をセット
+        // 固定の "一般（再入室）" を廃止し、取得データから職業名をセット
         updateStatusProfessionUI(existingPlayer.state);
         
         startMonitoring(existingPlayer.user_id);
@@ -119,7 +119,7 @@ function startMonitoring(myUserId) {
         const isMyTurn = guestState.isMyTurn();
         const pending = guestState.getPendingSalary();
 
-        // 🌟 リアルタイム更新のタイミングでも職業・役割表示を最新状態に同期
+        // リアルタイム更新のタイミングでも職業・役割表示を最新状態に同期
         if (myData && myData.state) {
             updateStatusProfessionUI(myData.state);
         }
@@ -143,9 +143,15 @@ function startMonitoring(myUserId) {
                 onRollDice: () => { btnRollDice.click(); },
                 onVerifySuccess: async () => {
                     if (!myData || !myData.state) return;
-                    const unlockedState = { ...myData.state, is_calculating: false };
+                    
+                    // 【データアクセス方針5.2.2適用】全体上書きを廃止し、ロック解除フラグの差分パッチのみを構成
+                    const statePatch = { 
+                        is_calculating: false 
+                    };
+                    
                     try {
-                        await updateParticipantState(guestState.myUserId, unlockedState);
+                        // 差分パッチのみを送信してアトミックにDBマージ
+                        await updateParticipantState(guestState.myUserId, statePatch);
                         alert("計算チェックに成功しました！ロックが解除され、サイコロが振れるようになります。");
                     } catch (err) {
                         alert("ロック解除の同期に失敗しました。再試行してください。");
