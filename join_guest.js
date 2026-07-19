@@ -42,16 +42,25 @@ export async function executeJoin(username) {
 
     // 12種類の職業から1つをランダムに選出し、schema.json に完全準拠した初期データを構築する
     const selectedJob = getRandomJob();
+
+    // 【公式ルール対応】初期手持ちキャッシュ = 貯蓄(jobsデータ内のcash) + マンスリーキャッシュフロー(cashflow) を算出
+    const initialSavings = selectedJob.financials.cash ?? 0;
+    const monthlyCashFlow = selectedJob.financials.cashflow ?? 0;
+    const correctInitialCash = initialSavings + monthlyCashFlow;
+
     const initialState = {
         name: username,
         role: "一般",
-        profession: selectedJob.profession,
+        profession: selectedJob.profession, // 各自の選択された職業名（教師、パイロット等）を保持
         track: "rat_race",
         position: 0,
         last_dice: 0,
-        is_calculating: true,               // 新規追加: 初期状態を作業不可（ロック）にする
-        calculation_phase: "income_tax",    // 新規追加: 最初の筆算フェーズ（例: income_tax）を指定
-        financials: selectedJob.financials
+        is_calculating: true,               // 初期状態を作業不可（ロック）にする
+        calculation_phase: "income_tax",    // 最初の筆算フェーズを指定
+        financials: {
+            ...selectedJob.financials,
+            cash: correctInitialCash        // 公式ルールに基づいた初期手持ちキャッシュで上書き
+        }
     };
     
     try {
