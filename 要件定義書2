@@ -79,9 +79,15 @@
       }
     },
     "3_2_host_screen": {
-      "3_2_1_realtime_board_sync": ["state に従い全48マスと名簿テーブル（HOST.PARTICIPANT_ITEM に Profession カラムを包括）をリアルタイム描画する。"],
-      "3_2_2_data_reset_and_kick_control": ["全員退室による物理削除、および個別キックによる対象レコード削除と手番情報の再割り当て。"],
-      "3_2_3_card_management": ["rooms.game_state によるカード情報の単一管理とクライアントへの同期。"]
+      "3_2_1_realtime_board_sync": [
+        "state に従い全48マスと名簿テーブル（HOST.PARTICIPANT_ITEM に Profession カラムを包括）をリアルタイム描画する。"
+      ],
+      "3_2_2_data_reset_and_kick_control": [
+        "全員退室による物理削除、および個別キックによる対象レコード削除と手番情報の再割り当て。"
+      ],
+      "3_2_3_card_management": [
+        "rooms.game_state によるカード情報の単一管理とクライアントへの同期。"
+      ]
     }
   },
   "4_database_schema": {
@@ -95,5 +101,11 @@
       "realtime_enablement": "対象テーブルの変更を検知・配信する。",
       "rls_policy": "ゲストのアクセス権限を制御する。"
     }
+  },
+  "5_database_cleanliness_and_concurrency": {
+    "description": "データの整合性を維持するための排他制御およびデータアクセス方針",
+    "5_1_atomic_updates": "participantsテーブルのstate列（JSONB）に対するオブジェクト全体の完全上書きを禁止する。差分データのみをPostgreSQL側（Supabase RPC 'merge_participant_state'等）でアトミックにマージ・更新し、ロストアップデートを完全に防ぐ。",
+    "5_2_turn_transition_safety": "手番の移行処理時、次プレイヤーの state.last_dice を安全に 0（プリロール状態）へ初期化してから rooms の current_turn_user_id を更新することで、UIの不正な再ロールロックを防止する。",
+    "5_3_logic_encapsulation": "複数テーブルや複数行にまたがる状態遷移（一連のステート操作）はクライアント側での分割クエリ実行を避け、データベース内部のRPCとしてカプセル化して1トランザクションで完結させる。"
   }
 }
