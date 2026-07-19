@@ -63,6 +63,22 @@
                 "enum": ["income_tax", "payday", "deal", "none"], 
                 "description": "現在何の計算待ちであるかのフェーズ識別子。検証完了時や、財務変動がない手番スキップ時は 'none' となる。" 
               },
+              "children_count": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 3,
+                "description": "現在の子供の人数。上限値は3人。"
+              },
+              "charity_turns_left": {
+                "type": "number",
+                "minimum": 0,
+                "description": "チャリティ効果（サイコロを2個振る権利）の残りターン数。通常手番ごとに1減少し、0で効果終了。"
+              },
+              "downsized_turns_left": {
+                "type": "number",
+                "minimum": 0,
+                "description": "リストラによる手番スキップの残りターン数。0より大きい場合は手番が自動的にスキップされ、手番消費時に1減少する。"
+              },
               "financials": {
                 "type": "object",
                 "properties": {
@@ -130,7 +146,7 @@
                 "required": ["cash", "cashflow", "income", "expenses", "assets", "liabilities"]
               }
             },
-            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "calculation_phase", "financials"]
+            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "calculation_phase", "children_count", "charity_turns_left", "downsized_turns_left", "financials"]
           }
         },
         "required": ["room_id", "user_id", "state"]
