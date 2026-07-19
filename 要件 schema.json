@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Cashflow Game Database Schema (Updated)",
-  "description": "Supabase上のroomsテーブルおよびparticipantsテーブルの厳密なデータ構造と、給料日マスの通過判定ロジック定義",
+  "description": "Supabase上のrooms, participants, cardsテーブルの厳密なデータ構造とロジック定義",
   "type": "object",
   "properties": {
     "board_settings": {
@@ -26,6 +26,36 @@
         }
       }
     },
+    "cards": {
+      "type": "array",
+      "description": "カードのマスターデータ（JSONファイルおよびSupabaseのcardsテーブルに該当）",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "number" },
+          "deck_type": { "type": "string", "enum": ["small_deal", "big_deal", "market", "doodad"] },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "symbol": { "type": "string", "description": "例: House, Apart(24), MYT4U" },
+          "asset_type": { "type": "string", "enum": ["real_estate", "stock", "business", "coin", "none"], "description": "財務諸表の反映カテゴリ" },
+          "cost": { "type": "number" },
+          "down_payment": { "type": "number" },
+          "mortgage": { "type": "number" },
+          "passive_income": { "type": "number" },
+          "is_resellable": { "type": "boolean", "description": "他プレイヤーへの転売が可能かどうか" },
+          "action_rule": {
+             "type": ["object", "null"],
+             "description": "子供の数での掛け算や株式分割など、特殊な計算ルール",
+             "properties": {
+                 "type": { "type": "string", "enum": ["multiply_by_child", "stock_split", "stock_reverse_split", "market_sell"] },
+                 "target_symbol": { "type": "string" },
+                 "multiplier": { "type": "number" }
+             }
+          }
+        },
+        "required": ["id", "deck_type", "title", "description"]
+      }
+    },
     "rooms": {
       "type": "array",
       "items": {
@@ -38,16 +68,31 @@
             "properties": {
               "current_card": {
                 "type": ["object", "null"],
+                "description": "現在引かれているカードのインスタンス情報",
                 "properties": {
                   "status": { "type": "string", "enum": ["active", "completed"] },
                   "owner_user_id": { "type": "string" },
-                  "deck_type": { "type": "string" },
+                  "card_id": { "type": "number", "description": "マスターデータのID参照" },
+                  "deck_type": { "type": "string", "enum": ["small_deal", "big_deal", "market", "doodad"] },
                   "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "symbol": { "type": "string" },
+                  "asset_type": { "type": "string" },
                   "cost": { "type": "number" },
                   "down_payment": { "type": "number" },
                   "mortgage": { "type": "number" },
-                  "passive_income": { "type": "number" }
-                }
+                  "passive_income": { "type": "number" },
+                  "is_resellable": { "type": "boolean" },
+                  "action_rule": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "type": { "type": "string" },
+                      "target_symbol": { "type": "string" },
+                      "multiplier": { "type": "number" }
+                    }
+                  }
+                },
+                "required": ["status", "card_id", "deck_type", "title"]
               }
             }
           }
@@ -133,5 +178,5 @@
       }
     }
   },
-  "required": ["board_settings", "rooms", "participants"]
+  "required": ["board_settings", "cards", "rooms", "participants"]
 }
