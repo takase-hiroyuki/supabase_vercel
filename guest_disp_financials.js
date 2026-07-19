@@ -1,5 +1,7 @@
 // guest_disp_financials.js
 
+import { DOM_SELECTORS } from './dom_selectors.js';
+
 /**
  * 財務諸表（損益計算書・貸借対照表）を表示・バインドする関数
  * 静的な index.html の要素に対して値を代入し、状態に応じた制御を行う
@@ -10,25 +12,26 @@
  */
 export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVerifyFailure) {
     const financials = playerState.financials;
+    const fSelectors = DOM_SELECTORS.GUEST.FINANCIALS;
 
-    // index.html に存在する静的要素の取得
-    const calcPhaseName = document.getElementById("calc-phase-name");
-    const calcLockStatus = document.getElementById("calc-lock-status");
-    const displaySalary = document.getElementById("display-salary");
-    const displayPassiveIncome = document.getElementById("display-passive-income");
-    const displayTotalExpenses = document.getElementById("display-total-expenses");
+    // index.html に存在する静的要素を中央定義セレクターから取得
+    const calcPhaseName = document.getElementById(fSelectors.CALC_PHASE_NAME);
+    const calcLockStatus = document.getElementById(fSelectors.CALC_LOCK_STATUS);
+    const displaySalary = document.getElementById(fSelectors.DISPLAY_SALARY);
+    const displayPassiveIncome = document.getElementById(fSelectors.DISPLAY_PASSIVE_INCOME);
+    const displayTotalExpenses = document.getElementById(fSelectors.DISPLAY_TOTAL_EXPENSES);
     
-    const inputTotalIncome = document.getElementById("input-total-income");
-    const inputNetCashflow = document.getElementById("input-net-cashflow");
-    const btnCheckCalculations = document.getElementById("btn-check-calculations");
+    const inputTotalIncome = document.getElementById(fSelectors.INPUT_TOTAL_INCOME);
+    const inputNetCashflow = document.getElementById(fSelectors.INPUT_NET_CASHFLOW);
+    const btnCheckCalculations = document.getElementById(fSelectors.BTN_CHECK_CALCULATIONS);
 
     // 要素が存在しない場合は処理を中断
     if (!inputTotalIncome || !inputNetCashflow || !btnCheckCalculations) return;
 
     // --- 1. テキスト情報の代入 ---
     if (calcPhaseName) {
-        // 現在の計算フェーズ（income_tax 等）を表示用にマッピング（必要に応じて日本語名へ）
-        calcPhaseName.textContent = playerState.calculation_phase || "未定";
+        // 現在の計算フェーズを表示用にマッピング（null または未定義の場合は "なし"）
+        calcPhaseName.textContent = playerState.calculation_phase || "なし";
     }
 
     if (calcLockStatus) {
@@ -42,8 +45,8 @@ export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVer
     }
 
     // 基本財務データの表示更新
-    if (displaySalary) displaySalary.textContent = financials.income.salary || 0;
-    if (displayPassiveIncome) displayPassiveIncome.textContent = financials.income.passive || 0;
+    if (displaySalary) displaySalary.textContent = financials.income.salary?.toLocaleString() || 0;
+    if (displayPassiveIncome) displayPassiveIncome.textContent = financials.income.passive?.toLocaleString() || 0;
     
     // 総支出の計算と表示
     let correctTotalExpenses = 0;
@@ -52,23 +55,22 @@ export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVer
             correctTotalExpenses += (financials.expenses[key] || 0);
         }
     });
-    if (displayTotalExpenses) displayTotalExpenses.textContent = correctTotalExpenses;
+    if (displayTotalExpenses) displayTotalExpenses.textContent = correctTotalExpenses.toLocaleString();
 
     // --- 2. 閲覧モード（自分か他人か）および計算状態による制御 ---
     if (isReadOnly || !playerState.is_calculating) {
-        // 他人の画面を見ている、または既に計算が完了している場合は入力とボタンをロック
+        // 他人の画面を見ている、または既に計算が完了（初期状態含む）している場合は入力とボタンをロック
         inputTotalIncome.disabled = true;
         inputNetCashflow.disabled = true;
         btnCheckCalculations.disabled = true;
         
-        // 既に計算完了している場合は、参考値として正解を最初から入れておくなどのケア
+        // 🌟 筆算フェーズ（is_calculating: true）ではない通常時は、手入力欄をクリアしてプレースホルダー状態に戻す
         if (!playerState.is_calculating) {
-            const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
-            inputTotalIncome.value = correctTotalIncome;
-            inputNetCashflow.value = correctTotalIncome - correctTotalExpenses;
+            inputTotalIncome.value = "";
+            inputNetCashflow.value = "";
         }
     } else {
-        // 自分の手番かつ計算フェーズ中の場合は入力を許可
+        // 自分の手番かつ計算フェーズ中の場合は入力を許可し、前回入力値があればクリア
         inputTotalIncome.disabled = false;
         inputNetCashflow.disabled = false;
         btnCheckCalculations.disabled = false;
