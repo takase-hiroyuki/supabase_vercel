@@ -24,10 +24,51 @@ export async function getCurrentTurn(targetRoomId) {
 
 /**
  * 指定した部屋の手番（プレイヤーID）を更新する関数
+ * 
+ * 【修正経緯】
+ * 従来の処理では rooms テーブルの current_turn_user_id を切り替えるだけで、
+ * 次のプレイヤー（nextUserId）の last_dice を 0 にリセットする処理が欠落していました。
+ * これにより前周の出目が残り、手番開始直後にUIがロックされるバグが発生。
+ * 対策として、手番変更前に participants テーブルから新プレイヤーの最新の state を取得し、
+ * その中の last_dice を 0 に安全に上書きしてから手番を移行するよう修正しました。
+ * 
  * @param {string} targetRoomId - 部屋ID
  * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
  */
 export async function updateCurrentTurn(targetRoomId, nextUserId) {
+    if (nextUserId) {
+        const { data: participant, error: fetchError } = await supabase
+            .from('participants')
+            .select('state')
+            .eq('room_id', targetRoomId)
+            .eq('user_id', nextUserId)
+            .maybeSingle();
+
+        if (fetchError) {
+            console.error('移行先プレイヤーの取得失敗:', fetchError);
+            throw fetchError;
+        }
+
+        if (participant && participant.state) {
+            const updatedState = {
+                ...participant.state,
+                last_dice: 0
+            };
+
+            const { error: updatePlayerError } = await supabase
+                .from('participants')
+                .update({ state: updatedState })
+                .eq('room_id', targetRoomId)
+                .eq('user_id', nextUserId);
+
+            if (updatePlayerError) {
+                console.error('手番開始時のlast_diceリセットに失敗:', updatePlayerError);
+                throw updatePlayerError;
+            }
+            console.log(`【デバッグ】ユーザー [${nextUserId}] の last_dice を 0 に初期化しました。`);
+        }
+    }
+
     const { data, error } = await supabase
         .from('rooms')
         .upsert({ id: targetRoomId, current_turn_user_id: nextUserId })
@@ -45,7 +86,6 @@ export async function updateCurrentTurn(targetRoomId, nextUserId) {
  * @param {string} targetRoomId - 部屋ID
  */
 export async function clearRoomParticipants(targetRoomId) {
-    // 1. 該当する部屋の参加者を物理削除
     const { data, error } = await supabase
         .from('participants')
         .delete()
@@ -57,7 +97,6 @@ export async function clearRoomParticipants(targetRoomId) {
         throw error;
     }
 
-    // 2. 部屋の手番情報（current_turn_user_id）もNULLに更新し、DBをクリーンアップ
     const { error: roomError } = await supabase
         .from('rooms')
         .update({ current_turn_user_id: null })
@@ -74,17 +113,15 @@ export async function clearRoomParticipants(targetRoomId) {
 /**
  * 部屋（rooms）の変更をリアルタイムで監視する関数
  * @param {string} targetRoomId - 監視する部屋ID
- * @param {function} onUpdate - データ更新時に実行する関数
+ * @param {function} onUpdate -データ更新時に実行する関数
  */
 export function subscribeToRoom(targetRoomId, onUpdate) {
-    // 初期化時に現在の手番を一度取得して反映
     getCurrentTurn(targetRoomId).then((currentTurnUserId) => {
         onUpdate(currentTurnUserId);
     }).catch((err) => {
         console.error("手番の初期値取得に失敗しました:", err);
     });
 
-    // リアルタイム通信を開始して、roomsテーブルの変更を監視する
     return supabase
         .channel('public:rooms')
         .on(
@@ -93,7 +130,6 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
             (payload) => {
                 console.log("【デバッグ・Realtime受信】rooms変更を検知しました:", payload);
                 
-                // DELETEイベント発生時、またはpayload.newが存在しない場合の安全なフォールバック
                 let nextTurnUserId = null;
                 if (payload.eventType !== 'DELETE' && payload.new) {
                     nextTurnUserId = payload.new.current_turn_user_id;
