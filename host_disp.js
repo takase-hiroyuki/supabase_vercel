@@ -1,12 +1,17 @@
 // host_disp.js
 
+// 【追加】DOMセレクター一括管理ファイルのインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
+
 /**
  * 画面上のすごろく盤面（各マス）に配置されているコマをすべて消去する関数
  */
 export const clearBoardCells = () => {
-    // HTML側の24マス（0〜23）に合わせて、ループ上限を 8 から 24 に変更
+    const boardSelectors = DOM_SELECTORS.HOST.BOARD;
+    // HTML側の24マス（0〜23）に合わせて、ループ上限を 24 に変更
     for (let i = 0; i < 24; i++) {
-        const cell = document.getElementById(`cell-${i}`);
+        // 🌟 ハードコーディングされていた `cell-${i}` をプレフィックス定数経由に集約
+        const cell = document.getElementById(`${boardSelectors.CELL_PREFIX}${i}`);
         if (cell) {
             cell.textContent = ''; // マスの中身を空にする
         }
@@ -39,6 +44,9 @@ export const renderTurnDisplay = (currentTurnUserIdCache, latestParticipants, ho
  * @param {HTMLElement} listBody - 名簿テーブルのtbody要素
  */
 export const renderParticipantDisplay = (participants, listBody) => {
+    const itemSelectors = DOM_SELECTORS.HOST.PARTICIPANT_ITEM;
+    const boardSelectors = DOM_SELECTORS.HOST.BOARD;
+
     // 【デバッグ挿入】関数が呼ばれた事実とデータの中身を出力
     console.log("【ホストDB1】renderParticipantDisplayが実行されました。データ件数:", participants.length);
     participants.forEach((p, i) => {
@@ -49,10 +57,12 @@ export const renderParticipantDisplay = (participants, listBody) => {
     clearBoardCells();       // すごろく盤面を一旦クリア
 
     participants.forEach((p, index) => {
-        const state = p.state || { name: '未特定', position: 0, role: '一般', profession: '一般' };
+        const state = p.state || { name: '未特定', position: 0, role: 'general', profession: '一般' };
 
         // --- A. 名簿テーブルへの描画処理 ---
         const tr = document.createElement('tr');
+        // 🌟 一括管理で定義された行用のCSSクラス（'host-participant-row'）を付与
+        tr.classList.add(itemSelectors.ROW_CLASS);
         
         // 00番マスは「00給料」、それ以外は「XX 番マス」に整形
         const pos = state.position ?? 0;
@@ -61,21 +71,25 @@ export const renderParticipantDisplay = (participants, listBody) => {
         // データベースのスキーマ構造 (state.financials.cash) からキャッシュを取得
         const cashValue = state.financials?.cash ?? 0;
 
-        // 🌟 職業データを取得（無い場合は '一般'）
+        // 職業データを取得（無い場合は '一般'）
         const professionText = state.profession || '一般';
+        
+        // システム的な進行フェーズ（role）もホスト側で視認しやすいよう補足テキストとして用意
+        const currentRole = state.role || 'general';
 
         // 🌟 内訳テーブルの列順（入室順 -> 氏名 -> 職業 -> 位置 -> キャッシュ）に合わせてTDを構築
+        // （バグ防止のため、中央定義ファイルから職業のクラス名 'host-participant-profession' を挿入）
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td>${state.name || '不明'} (${p.user_id})</td>
-            <td class="host-participant-profession">${professionText}</td>
+            <td>${state.name || '不明'} [${currentRole}]</td>
+            <td class="${itemSelectors.PROFESSION_CLASS}">${professionText}</td>
             <td>${positionText}</td>
             <td>$${cashValue.toLocaleString()}</td>
         `;
         listBody.appendChild(tr);
 
         // --- B. すごろく盤面へのコマ配置処理 ---
-        const targetCellId = `cell-${pos}`;
+        const targetCellId = `${boardSelectors.CELL_PREFIX}${pos}`;
         const cell = document.getElementById(targetCellId);
         if (cell) {
             const pieceTable = document.createElement('table');
