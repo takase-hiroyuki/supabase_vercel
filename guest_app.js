@@ -115,19 +115,42 @@ function startMonitoring(myUserId) {
 
     // UIを最新のデータに基づいて一括再描画する中間処理
     const triggerUIRefresh = () => {
+        const myData = latestParticipants.find(p => p.user_id === myUserId);
+        
+        // 1. 自分が「計算検証フェーズ」でロックされているかどうかを取得
+        const isFinancialsLocked = myData && myData.state ? (myData.state.is_calculating ?? false) : false;
+
         refreshGuestUI(
             latestParticipants,
             currentTurnUserIdCache,
             myUserId,
             myUserId,
-            false,
+            isFinancialsLocked, // 修正: 固定値から動的判定フラグに変更
             null,
             {
                 onRollDice: () => {
                     btnRollDice.click();
                 },
-                onVerifySuccess: () => console.log("【財務検証】成功"),
-                onVerifyFailure: () => console.log("【財務検証】失敗"),
+                onVerifySuccess: async () => {
+                    console.log("【財務検証】計算が一致しました。ロック解除を送信します。");
+                    if (!myData || !myData.state) return;
+
+                    // 2. 一致したため、is_calculating を false に落としてDBを更新
+                    const unlockedState = {
+                        ...myData.state,
+                        is_calculating: false
+                    };
+                    try {
+                        await updateParticipantState(myUserId, unlockedState);
+                        alert("計算チェックに成功しました！ロックが解除され、サイコロが振れるようになります。");
+                    } catch (err) {
+                        console.error("ロック解除の送信に失敗:", err);
+                        alert("ロック解除の同期に失敗しました。再試行してください。");
+                    }
+                },
+                onVerifyFailure: (errorMsg) => {
+                    alert(errorMsg);
+                },
                 onCardAction: (action) => console.log("【カードアクション】", action)
             }
         );
@@ -153,11 +176,14 @@ function startMonitoring(myUserId) {
             const updatedState = {
                 name: myData.state.name,
                 role: myData.state.role || '一般',
-                profession: myData.state.profession, // schema必須項目を継承
-                track: myData.state.track,           // schema必須項目を継承
+                profession: myData.state.profession, 
+                track: myData.state.track,           
                 position: nextPosition,
                 last_dice: diceRoll,
-                financials: myData.state.financials || {}
+                financials: myData.state.financials || {},
+                // 3. サイコロ移動時に計算フラグの状態を安全に継承
+                is_calculating: myData.state.is_calculating ?? false,
+                calculation_phase: myData.state.calculation_phase || null
             };
 
             guestDiceResult.textContent = `送信開始: 出目=${diceRoll}, 次位置=${nextPosition}, ID=${myUserId}`;
