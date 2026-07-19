@@ -1,8 +1,8 @@
 // guest_disp_financials.js
 
 /**
- * 財務諸表（損益計算書・貸借対照表）を表示する関数
- * 計算チェックのための入力項目と検証ロジックを提供する
+ * 財務諸表（損益計算書・貸借対照表）を表示・バインドする関数
+ * 静的な index.html の要素に対して値を代入し、状態に応じた制御を行う
  * @param {object} playerState - 表示対象プレイヤーの state オブジェクト
  * @param {boolean} isReadOnly - 読み取り専用（他プレイヤーの閲覧時）かどうかのフラグ
  * @param {function} onVerifySuccess - 計算チェック合致時に呼び出すコールバック
@@ -10,82 +10,90 @@
  */
 export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVerifyFailure) {
     const financials = playerState.financials;
-    const container = document.getElementById("financials-container");
-    if (!container) return;
 
-    // プログラム内部で論理的に正しい合計値を算出（検証用）
-    const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
+    // index.html に存在する静的要素の取得
+    const calcPhaseName = document.getElementById("calc-phase-name");
+    const calcLockStatus = document.getElementById("calc-lock-status");
+    const displaySalary = document.getElementById("display-salary");
+    const displayPassiveIncome = document.getElementById("display-passive-income");
+    const displayTotalExpenses = document.getElementById("display-total-expenses");
     
+    const inputTotalIncome = document.getElementById("input-total-income");
+    const inputNetCashflow = document.getElementById("input-net-cashflow");
+    const btnCheckCalculations = document.getElementById("btn-check-calculations");
+
+    // 要素が存在しない場合は処理を中断
+    if (!inputTotalIncome || !inputNetCashflow || !btnCheckCalculations) return;
+
+    // --- 1. テキスト情報の代入 ---
+    if (calcPhaseName) {
+        // 現在の計算フェーズ（income_tax 等）を表示用にマッピング（必要に応じて日本語名へ）
+        calcPhaseName.textContent = playerState.calculation_phase || "未定";
+    }
+
+    if (calcLockStatus) {
+        if (playerState.is_calculating) {
+            calcLockStatus.textContent = isReadOnly ? "他プレイヤーが計算検証中..." : "計算検証待ち (ロック中)";
+            calcLockStatus.style.color = "red";
+        } else {
+            calcLockStatus.textContent = "計算完了 (解除済み)";
+            calcLockStatus.style.color = "green";
+        }
+    }
+
+    // 基本財務データの表示更新
+    if (displaySalary) displaySalary.textContent = financials.income.salary || 0;
+    if (displayPassiveIncome) displayPassiveIncome.textContent = financials.income.passive || 0;
+    
+    // 総支出の計算と表示
     let correctTotalExpenses = 0;
     Object.keys(financials.expenses).forEach(key => {
         if (key !== 'total') {
             correctTotalExpenses += (financials.expenses[key] || 0);
         }
     });
-    
-    const correctCashflow = correctTotalIncome - correctTotalExpenses;
+    if (displayTotalExpenses) displayTotalExpenses.textContent = correctTotalExpenses;
 
-    let correctTotalAssets = 0; // 拡張用ロジックのプレースホルダー
-    let correctTotalLiabilities = 0;
-    Object.keys(financials.liabilities).forEach(key => {
-        if (key !== 'total') {
-            correctTotalLiabilities += (financials.liabilities[key] || 0);
+    // --- 2. 閲覧モード（自分か他人か）および計算状態による制御 ---
+    if (isReadOnly || !playerState.is_calculating) {
+        // 他人の画面を見ている、または既に計算が完了している場合は入力とボタンをロック
+        inputTotalIncome.disabled = true;
+        inputNetCashflow.disabled = true;
+        btnCheckCalculations.disabled = true;
+        
+        // 既に計算完了している場合は、参考値として正解を最初から入れておくなどのケア
+        if (!playerState.is_calculating) {
+            const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
+            inputTotalIncome.value = correctTotalIncome;
+            inputNetCashflow.value = correctTotalIncome - correctTotalExpenses;
         }
-    });
-
-    // スタイルシートを使わないHTML標準要素のみの生成
-    container.innerHTML = `
-        <fieldset>
-            <legend>${playerState.name}の財務諸表（職業: ${playerState.profession} / 現在資金: $${financials.cash}）</legend>
-            
-            <h3>【損益計算書】</h3>
-            <p>給与: $${financials.income.salary} | 不労所得: $${financials.income.passive}</p>
-            <label>総収入入力欄: </label>
-            <input type="number" id="input-total-income" ${isReadOnly ? 'readonly' : ''} value="${isReadOnly ? correctTotalIncome : ''}"><br>
-            
-            <p>税金: $${financials.expenses.taxes} | 住宅ローン: $${financials.expenses.mortgage_payment} | 車ローン: $${financials.expenses.car_loan_payment} | その他: $${financials.expenses.other}</p>
-            <label>総支出入力欄: </label>
-            <input type="number" id="input-total-expenses" ${isReadOnly ? 'readonly' : ''} value="${isReadOnly ? correctTotalExpenses : ''}"><br>
-            
-            <label>毎月のキャッシュフロー入力欄: </label>
-            <input type="number" id="input-cashflow" ${isReadOnly ? 'readonly' : ''} value="${isReadOnly ? correctCashflow : ''}"><br>
-
-            <h3>【貸借対照表】</h3>
-            <label>負債合計入力欄: </label>
-            <input type="number" id="input-total-liabilities" ${isReadOnly ? 'readonly' : ''} value="${isReadOnly ? correctTotalLiabilities : ''}"><br>
-            
-            ${isReadOnly ? '' : '<button type="button" id="btn-check-financials">計算チェック</button>'}
-            <p id="financials-feedback-message"></p>
-        </fieldset>
-    `;
-
-    if (isReadOnly) {
-        // 他プレイヤー閲覧時は常にロック解除扱いに設定
-        onVerifySuccess();
-        return;
+    } else {
+        // 自分の手番かつ計算フェーズ中の場合は入力を許可
+        inputTotalIncome.disabled = false;
+        inputNetCashflow.disabled = false;
+        btnCheckCalculations.disabled = false;
     }
 
-    // 計算チェックボタンのイベントリスナー設定
-    const checkBtn = document.getElementById("btn-check-financials");
-    if (checkBtn) {
-        checkBtn.addEventListener("click", () => {
-            const userIncome = parseInt(document.getElementById("input-total-income").value, 10);
-            const userExpenses = parseInt(document.getElementById("input-total-expenses").value, 10);
-            const userCashflow = parseInt(document.getElementById("input-cashflow").value, 10);
-            const userLiabilities = parseInt(document.getElementById("input-total-liabilities").value, 10);
+    // --- 3. 計算チェックボタンのイベントバインド ---
+    // 重複登録を防ぐため、一度イベントリスナーをクリアして再設定する
+    btnCheckCalculations.onclick = null;
+    btnCheckCalculations.onclick = () => {
+        // 入力値の取得（空文字の場合は0として扱う）
+        const userTotalIncome = parseInt(inputTotalIncome.value, 10) || 0;
+        const userNetCashflow = parseInt(inputNetCashflow.value, 10) || 0;
 
-            const feedback = document.getElementById("financials-feedback-message");
+        // プログラム内部での正解判定ロジック
+        const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
+        const correctCashflow = correctTotalIncome - correctTotalExpenses;
 
-            if (userIncome === correctTotalIncome && 
-                userExpenses === correctTotalExpenses && 
-                userCashflow === correctCashflow && 
-                userLiabilities === correctTotalLiabilities) {
-                feedback.textContent = "【検証】計算が合致しました。主要な操作ロックを解除します。";
-                onVerifySuccess();
-            } else {
-                feedback.textContent = "【エラー】計算結果が正しくありません。電卓等で確認の上、修正してください。";
-                onVerifyFailure();
-            }
-        });
-    }
+        // 検証
+        if (userTotalIncome === correctTotalIncome && userNetCashflow === correctCashflow) {
+            onVerifySuccess();
+        } else {
+            let errorMsg = "計算が正しくありません。\n";
+            if (userTotalIncome !== correctTotalIncome) errorMsg += "・総収入の計算が違います。\n";
+            if (userNetCashflow !== correctCashflow) errorMsg += "・キャッシュフローの計算が違います。\n";
+            onVerifyFailure(errorMsg);
+        }
+    };
 }
