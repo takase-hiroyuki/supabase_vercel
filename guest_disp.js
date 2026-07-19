@@ -47,16 +47,21 @@ export function refreshGuestUI(
     );
 
     // ==========================================
-    // 【加筆】「あなたのステータス」欄の手持ちキャッシュをリアルタイム同期
+    // 【加筆】「あなたのステータス」欄（キャッシュ ＆ 職業名）のリアルタイム同期
     // ==========================================
     const myData = participants.find(p => p.user_id === myUserId);
     if (myData && myData.state) {
-        // dom_selectors.js に定義した正確なID（'display-current-cash'）でHTML要素を取得
+        // ① 手持ちキャッシュの同期
         const elHandCash = document.getElementById(DOM_SELECTORS.GUEST.STATUS.DISPLAY_CURRENT_CASH);
         if (elHandCash) {
             const currentCash = myData.state.financials?.cash ?? 0;
-            // 3桁カンマ区切りで数値をテキストへ流し込む
             elHandCash.textContent = currentCash.toLocaleString();
+        }
+
+        // ② 🌟割り当てられた職業名の同期を追加
+        const elProfession = document.getElementById(DOM_SELECTORS.GUEST.STATUS.PROFESSION);
+        if (elProfession) {
+            elProfession.textContent = myData.state.profession || '一般';
         }
     }
     // ==========================================
