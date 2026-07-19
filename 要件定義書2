@@ -10,185 +10,80 @@
 {
   "document_title": "構成管理型要件定義書：リアルタイムゲームマスター・財務同期システム（キャッシュフローゲーム完全永続化仕様）",
   "1_system_purpose": {
-    "summary": "本システムは、Supabaseのリアルタイムデータ同期（Realtime API）を活用し、ロバート・キヨサキ作「キャッシュフローゲーム（ラットレースからファーストトラックへの脱出プロセス）」における各プレイヤーの盤面同期、手番制御、および財務データ（PL/BS）を完全かつ厳密に同期・永続化する。",
-    "core_principle": "データのゾンビ化（重複入室・古いデータの再生成）を完全に防ぎ、常にデータベースを真価の唯一の源泉（Single Source of Truth）として機能させる。"
+    "summary": "本システムは、Supabaseのリアルタイムデータ同期（Realtime API）を活用し、ロバート・キヨサキ作「キャッシュフローゲーム」におけるプレイヤーの盤面同期、手番制御、財務データ（PL/BS）を厳密に同期・永続化する。",
+    "core_principle": "データのゾンビ化を完全に防ぎ、データベースを真価の唯一の源泉（Single Source of Truth）として機能させる。"
   },
   "2_development_and_design_policies": {
-    "2_1_css_exclusion": "開発フェーズ完了まではCSSによるデザイン装飾を一切行わない。HTML標準タグ（fieldset, legend, input, button, table等）のみで骨格を構成し、状態遷移などの論理的な正しさを完全に担保したのち、最終フェーズでのみCSSスタイルを適用する。",
-    "2_2_multi_session_debugging": "単一開発端末でのデバッグ効率向上のため、Chrome等のプロファイル機能（独立したlocalStorage空間）を利用したマルチセッション接続試験を前提とする。"
+    "2_1_css_exclusion": "HTML標準タグのみで骨格を構成し、最終フェーズでのみCSSスタイルを適用する。",
+    "2_2_multi_session_debugging": "ブラウザの独立プロファイル空間を利用したマルチセッション接続試験を前提とする。"
   },
   "3_screen_and_functional_requirements": {
     "3_1_guest_screen": {
       "3_1_1_login_check": [
-        "ページロード時、localStorage.getItem('user_id') から識別IDの読み込みを試みる。",
-        "IDが存在する場合、即座にSupabaseの participants テーブルを user_id で検索する。",
-        "データベースに存在する場合: ログインフォーム（section-login）をスキップし、直接ゲーム画面（section-guest）を表示してリアルタイム同期を開始する。",
-        "データベースに存在しない場合（ホストにキックされた、またはリセットされた場合）: localStorage内のゲーム関連データ（user_id, player_name等）を完全に破棄（localStorage.clear()）し、ログインフォームを表示して初期入室待ち状態にフォールバックさせる。"
+        "ページロード時、localStorage.getItem('user_id') からIDの読み込みを試みる。",
+        "ID存在時: Supabaseの participants テーブルを検索し、存在すれば即座に同期開始。存在しない場合は localStorage を clear() しログインフォームへフォールバック。"
       ],
       "3_1_2_join_process": [
-        "入室に関するルーチンは join_guest.js に集約する。",
-        "入室時、localStorage に user_id がない場合は、暗号強度を満たした一意のランダム文字列（crypto.randomUUID() 等のUUIDv4）を生成し保存する。",
-        "職業は、クライアントに用意された12種の職業スキーマからランダムに選択し、schema.json で定義された `profession` プロパティに格納する。システム権限を示す `role`（一般など）とは完全に分離する。",
-        "初期データの永続化: Supabaseへのインサート処理時、選択された職業に紐づく詳細な初期財務データ（financials）一式やトラック情報（track）を state JSONB内に完全な形で登録する。",
-        "一意制約の徹底: 同一IDによる多重送信が発生した場合は、DBのユニーク制約により例外処理へ流し、安全にゲーム画面へフォールバックさせる。",
-        "初期手番設定: 入室時に部屋の current_turn_user_id が null の場合、最初に入室したユーザーIDを最初の手番として rooms に自動設定する。"
+        "入室時にUUIDv4の生成と localStorage への保存を行う。",
+        "職業および初期財務データは schema.json に基づき生成し、state JSONB に永続化する。",
+        "最初に入室したユーザーに初期手番を割り当てる。"
       ],
       "3_1_3_financial_statement_binding_and_validation": [
-        "完全なUIバインディング: 画面ロード時および監視イベント検知時、データベース内の state.financials から抽出した各項目を、入力フィールドまたは表示テキストへ即座にバインドする。固定されたHTML構造を直接書き換えるため、innerHTMLによる動的生成は一切行わない。",
-        "計算・入力チェックロジック: 総収入、総支出、月々のキャッシュフロー、負債合計などの合計項目は、教育的効果を目的にユーザー自身の電卓による手入力 input フィールドとする。",
-        "財務計算フェーズの厳密な発生条件: プレイヤーに新たな財務変動（資産購入・売却、給与変更、子供の誕生等のイベントによるPL/BS数値の変更）が発生した直後の、該当プレイヤーの次回手番開始時のみ、システムは state.is_calculating を true に設定し、state.calculation_phase に対応する識別子（income_tax, payday, deal など）を格納してデータベースに永続化（強制ロック）する。",
-        "解放状態の維持条件（手番跨ぎスルー仕様）: 前回のターンですでに計算検証が完了（state.is_calculating === false）しており、その後現在の手番開始までに財務状態（financialsオブジェクトの内容）に一切の変動がない場合は、システムは無条件の true リセットを行わず、前回の解放状態（false）を維持しなければならない。これによりプレイヤーは連続して手計算を求められることなく即座にサイコロを振ることができる。",
-        "操作ロック仕様: リアルタイム同期により state.is_calculating === true（計算作業中）を検知している間、ゲスト画面上の主要なアクションボタン（サイコロを振る、カードを引く、マーケットに対応する等）を一律で強制非活性（disabled）にし、ゲーム進行を一時ロックする。",
-        "プレイヤーが「計算チェック」ボタンを押下した際、JS内部ロジックで正確に計算された値とユーザー入力値を比較判定する。",
-        "ロック解除フロー: 計算結果がデータベース上の真の値と一致したことを検知した場合、即座に state.is_calculating を false、state.calculation_phase を 'none' に更新してデータベースへ送信する。この変更がRealtimeを介して同期されることで、操作ロックが自動的に解除され、再びサイコロの押下等が可能となる。"
+        "財務項目のUIバインディングおよび手入力による計算チェックを実施。",
+        "財務変動発生時、state.is_calculating を true にし、該当プレイヤーの手番を強制ロック。",
+        "計算結果の一致を確認し、is_calculating を false に更新してロックを解除する。"
       ],
       "3_1_4_peer_financial_viewing": [
-        "ゲストが他プレイヤーの名前をクリックすることで、財務諸表エリアの表示ソースを、該当する他プレイヤーの state.financials に切り替える。",
-        "他プレイヤーのデータ表示時はリアルタイムで追従するが、すべての input フィールドを読み取り専用（readonly）に変更し、計算チェック等のアクションを非活性化する。"
+        "他プレイヤー名クリックにより、readonly 状態で財務諸表を表示。"
       ],
       "3_1_5_reactive_kick_mechanism": [
-        "ゲスト画面は subscribeToParticipants の削除イベント（DELETE）、もしくは参加者一覧に自身の user_id が存在しないことを検知した場合、直ちに退室処理を自動起動する。",
-        "退室起動時: localStorage.clear() を実行してユーザー情報を抹消し、ログイン画面（section-login）へ強制遷移する。"
+        "Supabaseの削除イベント検知時、直ちに localStorage をクリアしログイン画面へ遷移。"
       ],
       "3_1_6_board_movement": [
-        "サイコロを振るボタン押下時、dice.js を使用して出目を決定し、現在の所属トラック（rat_race / fast_track）に準じた新しい位置（0〜23）を算出して state を更新する。",
-        "出目と更新後の state はSupabaseへ即時アップロードされる。"
+        "サイコロを振り、トラック（rat_race/fast_track）に応じた位置更新をSupabaseに反映させる。"
       ],
       "3_1_7_rat_race_tiles_specification": {
         "payday_tile": {
           "description": "給料日マス（通過または着地で発動）。",
-          "financial_trigger": "手持ちの『cash』に、現在の『cashflow（毎月のキャッシュフロー）』が即座に加算される。この時、PL/BSの基本構成数値に変動はないため、手番開始時の無条件な計算ロックは発生せず、解放状態（is_calculating: false）が維持される。"
+          "logic_definition": "移動発生時、旧位置(old_pos)から新位置(new_pos)までの差分経路(24マス循環)を走査し、通過した給料日マスの回数(n)を算出する。キャッシュ(cash)に対し、(n × cashflow) を即座に加算する。",
+          "financial_trigger": "キャッシュの加算のみであり、PL/BS基本数値の変動を伴わないため、計算ロック（is_calculating）は発生させない。"
         },
         "opportunity_tile": {
-          "description": "オポチュニティ（一獲千金のチャンス / スモールビジネス・ビッグビジネス）マス。",
-          "financial_trigger": "カードを引き、資産の購入（株、不動産等）や売却を行った場合、PL/BSの項目（不労所得、資産、負債など）が書き換わる。取引確定直後、システムは state.is_calculating = true、state.calculation_phase = 'deal' をセットし、次手番のサイコロを強制ロックする。"
+          "description": "オポチュニティ（好機）マス。取引確定直後、PL/BS項目変動を伴うため計算ロック(is_calculating: true, phase: 'deal')を発動。"
         },
         "doodad_tile": {
-          "description": "むだ使い（ドゥーダッド）マス。",
-          "financial_trigger": "カードを引き、臨時の支出（現金減少）、またはローンによる資産なき負債の増加が発生する。手持ち現金がマイナスになり、新たなローンを組んで『expenses（支出）』が書き換わった場合、即座に state.is_calculating = true、state.calculation_phase = 'deal' をセットしてロックする。"
+          "description": "むだ使い（ドゥーダッド）マス。支出変動やローン発生時、計算ロック(phase: 'deal')を発動。"
         },
         "charity_tile": {
-          "description": "慈善事業（チャリティ）マス。",
-          "financial_trigger": "総収入の10%を寄付することを選択した場合、手持ち『cash』が減少する。寄付の特典として『次ターンから3ターンの間、サイコロを2個同時に振る権利』が解放される。財務の基本構成数値に変更がないため、計算ロックは発生しない。"
+          "description": "慈善事業（チャリティ）マス。寄付選択時は現金が減少するが、計算ロックは発生させない。"
         },
         "baby_tile": {
-          "description": "子供の誕生マス（最大3人まで）。",
-          "financial_trigger": "子供が誕生すると、職業ごとの『子供1人あたりの経費』が expenses に追加され、総支出（total expenses）および毎月のキャッシュフローが強制的に書き換わる。変動直後、システムは state.is_calculating = true、state.calculation_phase = 'deal' をセットして次手番をロックする。"
+          "description": "子供の誕生マス。支出変動を伴うため、計算ロック(phase: 'deal')を発動。"
         },
         "downsized_tile": {
-          "description": "リストラ（失業）マス。",
-          "financial_trigger": "手持ち『cash』から、総支出（total expenses）と同額のペナルティが現金として徴収され、さらに3ターンの間手番がスキップ（行動不能）となる。財務構造自体の永続的な変更ではないため、計算ロックは発生しない。"
+          "description": "リストラ（失業）マス。支出相当額の現金徴収と3ターンの手番スキップを実行。計算ロックは発生させない。"
         },
         "market_tile": {
-          "description": "市場（マーケット）マス。",
-          "financial_trigger": "市場カードが引かれ、特定の資産（不動産など）を所有しているプレイヤーが売却を選択できる。売却が成立した場合、該当する資産・負債・不労所得が大幅に変動するため、取引完了と同時に state.is_calculating = true、state.calculation_phase = 'deal' に移行しロックをかける。"
+          "description": "市場（マーケット）マス。資産売却成立時、PL/BSの大きな変動を伴うため計算ロック(phase: 'deal')を発動。"
         }
       }
     },
     "3_2_host_screen": {
-      "3_2_1_realtime_board_sync": [
-        "リアルタイム監視を介して参加者データを受信した際、名簿テーブル、および「ラットレース（外周24マス）」「ファーストトラック（内周24マス）」の全48マスを一旦クリアする。",
-        "最新の state.track と state.position に従って、該当するすごろくマスの要素内にプレイヤー名を再描画する。",
-        "名簿テーブルには入室連番順で、プレイヤー名、ID、位置などをグリッド表示する。"
-      ],
-      "3_2_2_data_reset_and_kick_control": [
-        "一括退室（部屋リセット）: ホストが「全員を退室させる」ボタンを押下した際、対象 room_id に属する participants の全データを物理削除（DELETE）し、手番情報を null にリセットする。",
-        "個別キック: 対象番号を選択し「退室させる」ボタンを押下した際、該当プレイヤーレコードをDBから物理削除する。削除対象が手番保持者であった場合、current_turn_user_id を直ちに null に初期化する。"
-      ],
-      "3_2_3_card_management": [
-        "現在引き出されているカード情報（仮の所有権を含む current_card）の管理は、rooms.game_state 内部で単一の情報として管理する。",
-        "schema.json の定義に従い、status (active/completed)、deck_type、title、および各種金額情報（cost, down_payment, mortgage, passive_income）をリアルタイムでクライアントに同期させ、画面上の操作ボタンの制御等に活用する。"
-      ]
+      "3_2_1_realtime_board_sync": ["state に従い全48マスと名簿テーブルをリアルタイム描画する。"],
+      "3_2_2_data_reset_and_kick_control": ["全員退室による物理削除、および個別キックによる対象レコード削除と手番情報の再割り当て。"],
+      "3_2_3_card_management": ["rooms.game_state によるカード情報の単一管理とクライアントへの同期。"]
     }
   },
   "4_database_schema": {
     "4_1_rooms_table": {
-      "table_name": "rooms",
-      "columns": {
-        "id": { "type": "text", "constraint": "PRIMARY KEY", "description": "部屋識別用文字列（例: default_room）" },
-        "created_at": { "type": "timestamp with time zone", "constraint": "NOT NULL DEFAULT NOW()" },
-        "current_turn_user_id": { "type": "text", "constraint": "NULLABLE", "description": "現在の手番を有する user_id" },
-        "game_state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb", "description": "共通のゲームステータス（引かれているカード等）" }
-      },
-      "game_state_json_example": {
-        "current_card": {
-          "status": "active",
-          "owner_user_id": "user_94ob3bgk4",
-          "deck_type": "opportunity",
-          "title": "金貨の売買機会",
-          "cost": 500,
-          "down_payment": 500,
-          "mortgage": 0,
-          "passive_income": 0
-        }
-      }
+      "columns": ["id", "created_at", "current_turn_user_id", "game_state"]
     },
     "4_2_participants_table": {
-      "table_name": "participants",
-      "columns": {
-        "id": { "type": "bigint", "constraint": "PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY", "description": "入室順序ソートの基準フィールド" },
-        "room_id": { "type": "text", "constraint": "NOT NULL FOREIGN KEY REFERENCES rooms(id) ON DELETE CASCADE", "description": "所属する部屋のID。迷子（ゾンビ）データ防止のため Null 不可" },
-        "user_id": { "type": "text", "constraint": "NOT NULL UNIQUE", "description": "プレイヤーのユニークなID。重複入室を物理的に防ぐ一意制約" },
-        "created_at": { "type": "timestamp with time zone", "constraint": "NOT NULL DEFAULT NOW()" },
-        "state": { "type": "jsonb", "constraint": "NULLABLE DEFAULT '{}'::jsonb", "description": "プレイヤーの進行状況および財務データ完全同期オブジェクト" }
-      },
-      "state_json_example": {
-        "name": "いとう",
-        "role": "一般",
-        "profession": "弁護士",
-        "track": "rat_race",
-        "position": 0,
-        "last_dice": 0,
-        "is_calculating": false,
-        "calculation_phase": "none",
-        "financials": {
-          "cash": 2880,
-          "cashflow": 2880,
-          "income": {
-            "salary": 7500,
-            "passive": 0,
-            "total": 7500
-          },
-          "expenses": {
-            "taxes": 1800,
-            "mortgage_payment": 1100,
-            "car_loan_payment": 220,
-            "other": 1500,
-            "total": 4620
-          },
-          "assets": {
-            "stocks": {},
-            "real_estate": {}
-          },
-          "liabilities": {
-            "mortgage": 115000,
-            "car_loan": 11000,
-            "retail_debt": 1000
-          }
-        }
-      }
+      "columns": ["id", "room_id", "user_id", "created_at", "state"]
     },
     "4_3_supabase_configuration": {
-      "description": "テーブル作成時および再初期化時には、スキーマの構築に加えて以下の設定を必ず行うこと。",
-      "settings": {
-        "realtime_enablement": {
-          "target_tables": [
-            "rooms",
-            "participants"
-          ],
-          "purpose": "クライアント側へ、サイコロの出目や位置情報などの状態変化をリアルタイムで同期・通知するため。"
-        },
-        "rls_policy": {
-          "target_tables": [
-            "rooms",
-            "participants"
-          ],
-          "purpose": "ゲストユーザー（クライアント）からの適切な読み書きアクセスを許可・制御するため。"
-        },
-        "replication_publication": {
-          "purpose": "Realtime APIが、対象テーブルのレコード変更を検知して配信できるようにするため。"
-        }
-      }
+      "realtime_enablement": "対象テーブルの変更を検知・配信する。",
+      "rls_policy": "ゲストのアクセス権限を制御する。"
     }
   }
 }
