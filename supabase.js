@@ -18,6 +18,28 @@ import {
 } from './supabase_game.js';
 
 /**
+ * 山札からカードを1枚引く (RPC呼び出し)
+ * @param {string} roomId - 部屋ID
+ * @param {string} userId - プレイヤーのユーザーID
+ * @param {string} deckType - デッキの種類 ('small_deal', 'big_deal', 'market', 'doodad')
+ * @returns {Promise<object>} データベースからの処理結果（カード情報など）
+ */
+export async function drawCard(roomId, userId, deckType) {
+    const { data, error } = await supabase.rpc('draw_card_from_deck', {
+        p_room_id: roomId,
+        p_user_id: userId,
+        p_deck_type: deckType
+    });
+
+    if (error) {
+        console.error("【エラー】カードのドローに失敗しました:", error);
+        throw error;
+    }
+    
+    return data;
+}
+
+/**
  * @module supabase
  * @description 各エンドポイントおよびゲームロジック用Supabase操作関数を集約するハブモジュール
  * 
