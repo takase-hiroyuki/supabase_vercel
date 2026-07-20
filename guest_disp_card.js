@@ -1,6 +1,7 @@
 // guest_disp_card.js
 
-import { DOM_SELECTORS } from './selectors.js';
+// ⭕️ 正しいファイル名「dom_selectors.js」からインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
 
 /**
  * 共通の部屋データから、現在引き出されて共有されているカード情報を描画し、
