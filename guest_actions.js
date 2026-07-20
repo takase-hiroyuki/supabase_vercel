@@ -28,6 +28,12 @@ function calculateSalaryOnMove(oldPos, newPos, cashflow) {
  * サイコロを振ってコマを移動させるアクション
  */
 export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, guestDiceResult) {
+    // 🌟【最重要：防衛ロジック】ホストがゲームを開始するまでは絶対にサイコロを振らせない
+    if (!guestState.isGameStarted()) {
+        alert("ホストがゲームを開始するまでお待ちください。");
+        return;
+    }
+
     const myData = guestState.getMyData();
     if (!myData || !myData.state) {
         alert('自分のプレイヤーデータが見つかりません。');
@@ -77,6 +83,9 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
  * Paycheck（キャッシュフロー）を請求するアクション
  */
 export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
+    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
+    if (!guestState.isGameStarted()) return;
+
     const myData = guestState.getMyData();
     const pending = guestState.getPendingSalary();
     if (!myData || !myData.state || pending <= 0) return;
@@ -110,6 +119,9 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
  * 手番を終了して次のプレイヤーへ回すアクション（もらい忘れ含む）
  */
 export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResult) {
+    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
+    if (!guestState.isGameStarted()) return;
+
     try {
         btnEndTurn.disabled = true;
         btnClaimPaycheck.disabled = true;
@@ -139,6 +151,12 @@ export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResul
  * サーバー側で利息10%が自動連動計算される前提で、financialsの数値を安全にパッチ
  */
 export async function handleBankLoanAction(type) {
+    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
+    if (!guestState.isGameStarted()) {
+        alert("ゲーム開始前はローン操作を行えません。");
+        return;
+    }
+
     const myData = guestState.getMyData();
     if (!myData || !myData.state) return;
 
@@ -153,7 +171,7 @@ export async function handleBankLoanAction(type) {
             cash += 1000;
             alert(`銀行からローン $1,000 を借り入れました。 (毎月の金利支出: +$100)`);
         } else if (type === 'payback') {
-            if (bankLoan < 1000) { alert('返済するローン残高がありません。'); return; }
+            if (bankLoan < 1000) { alert('返済するローン残残高がありません。'); return; }
             if (cash < 1000) { alert('返済に必要な手持ちキャッシュが足りません！'); return; }
             bankLoan -= 1000;
             cash -= 1000;
@@ -163,8 +181,6 @@ export async function handleBankLoanAction(type) {
         // 10%の金利利息を連動計算
         loanInterest = Math.floor(bankLoan * 0.1);
 
-        // 教育的筆算フェーズの整合性を保つため、total_expenses や cashflow の再計算は
-        // サーバーサイドか次の財務チェック時に委ねる形で、第一階層のオブジェクトのみパッチを生成
         const statePatch = {
             financials: {
                 ...currentFinancials,
@@ -193,6 +209,9 @@ export async function handleBankLoanAction(type) {
  * サーバーサイド勝利判定RPC（またはステータス更新）に連動して役割を変更
  */
 export async function handleEscapeRatRace(btnEscape) {
+    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
+    if (!guestState.isGameStarted()) return;
+
     const myData = guestState.getMyData();
     if (!myData || !myData.state) return;
 
@@ -221,16 +240,15 @@ export async function handleEscapeRatRace(btnEscape) {
  * roomsテーブルの共通 game_state.current_card.status を completed に更新し、手番を進行可能にする
  */
 export async function handleCardAction(actionType) {
+    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
+    if (!guestState.isGameStarted()) return;
+
     const currentCard = guestState.currentCardCache;
     if (!currentCard || currentCard.status === "completed") return;
 
     try {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
-        // 実際の取引（お金の増減、資産リストへの追加パッチ）は本来、
-        // カードのデータ構造（cost, down_payment, asset_nameなど）を基に
-        // ここでさらにプレイヤーの financials を書き換えて updateParticipantState を呼び出します。
-        // 今回はUI結合・処理完了の同期を最優先とするため、カード状態をアトミックに完了へとリパッチします。
         const updatedGameState = {
             current_card: {
                 ...currentCard,
