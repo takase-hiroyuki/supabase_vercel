@@ -4,7 +4,8 @@
 import { roomId } from './config.js';
 // 【修正】コメントを実態（insertParticipant）に合わせて整理しました。supabaseクライアント自体もインポートに追加。
 import { supabase, subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
-import { renderTurnDisplay, renderParticipantDisplay } from './host_disp.js'; // 表示用ファイルをインポート
+// ★ renderDeckCounts を追加インポート
+import { renderTurnDisplay, renderParticipantDisplay, renderDeckCounts } from './host_disp.js'; // 表示用ファイルをインポート
 
 // ====== 新規追加：ホスト用ID ======
 const HOST_USER_ID = 'host-admin-01';
@@ -73,6 +74,20 @@ if (btnInitialShuffleStart) {
                 if (displayRoomStatus) {
                     displayRoomStatus.textContent = 'playing (ゲーム進行中)';
                 }
+
+                // 🌟【新規追加】初期シャッフル直後に最新データを再フェッチし、山札の残り枚数を即時反映
+                const { data: roomData, error: roomError } = await supabase
+                    .from('rooms')
+                    .select('game_state, current_turn_user_id')
+                    .eq('id', roomId)
+                    .single();
+
+                if (!roomError && roomData) {
+                    currentTurnUserIdCache = roomData.current_turn_user_id;
+                    renderDeckCounts(roomData.game_state);
+                    updateTurnDisplay();
+                }
+
             } else {
                 alert("エラー: " + data.error);
                 // エラー時はボタンを元に戻す
@@ -122,10 +137,20 @@ if (btnSetTurn) {
 console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
 subscribeToParticipants(roomId, updateParticipantTable);
 
-// 部屋（手番情報）の変更をリアルタイム監視
-subscribeToRoom(roomId, (currentTurnUserId) => {
-    console.log("【ホストDB3】subscribeToRoomを受信しました。currentTurnUserId:", currentTurnUserId);
-    currentTurnUserIdCache = currentTurnUserId; // 手番IDをキャッシュに保存
+// 部屋（手番情報・ゲーム状態）の変更をリアルタイム監視
+// ★ 引数を部屋オブジェクト全体、あるいは必要データを受け取れる形式に適合
+subscribeToRoom(roomId, (roomData) => {
+    if (roomData && typeof roomData === 'object') {
+        console.log("【ホストDB3】subscribeToRoomを受信しました。データオブジェクト:", roomData);
+        currentTurnUserIdCache = roomData.current_turn_user_id;
+        
+        // 🌟 リアルタイム更新時にも残り枚数描画関数を実行
+        renderDeckCounts(roomData.game_state);
+    } else {
+        // 引数が単一のID文字列（互換性フォールバック）だった場合
+        console.log("【ホストDB3】subscribeToRoomを受信しました。currentTurnUserId:", roomData);
+        currentTurnUserIdCache = roomData;
+    }
     updateTurnDisplay(); // 表示を更新
 });
 
