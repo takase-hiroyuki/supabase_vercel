@@ -7,8 +7,8 @@ import { renderPortfolio } from './guest_disp_portfolio.js';
 import { renderCurrentCard } from './guest_disp_card.js';
 import { updateGameControls } from './guest_disp_controls.js';
 
-// DOMセレクター一括管理ファイルのインポート
-import { DOM_SELECTORS } from './selectors.js';
+// ⭕️ 正しいファイル名「dom_selectors.js」からインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
 
 /**
  * 【ゲストUIハブ】
@@ -16,7 +16,6 @@ import { DOM_SELECTORS } from './selectors.js';
  * @param {Array} participants - 最新の全参加者リスト
  * @param {string|null} currentTurnUserId - 現在の手番ユーザーID
  * @param {string} myUserId - 操作しているゲスト自身のID
- * @param {string|null} currentViewTargetId - 財務諸表の閲覧対象ユーザーID
  * @param {boolean} isFinancialsLocked - 計算検証のロック状態フラグ
  * @param {object|null} currentRoomCard - roomsから取得した現在の共通カード情報
  * @param {object} callbacks - 各コンポーネント用のアクションイベント群
@@ -25,7 +24,6 @@ export function refreshGuestUI(
     participants, 
     currentTurnUserId, 
     myUserId, 
-    currentViewTargetId, 
     isFinancialsLocked, 
     currentRoomCard,
     callbacks
@@ -97,7 +95,8 @@ export function refreshGuestUI(
         }
 
         // ⑤ ラットレース脱出申請ボタンの活性制御
-        const btnEscape = document.getElementById(DOM_SELECTORS.GUEST.CONTROLS.BTN_ESCAPE_RAT_CASE);
+        // ⭕️ 正しい変数定義「BTN_ESCAPE_RAT_RACE」へ修正完了
+        const btnEscape = document.getElementById(DOM_SELECTORS.GUEST.CONTROLS.BTN_ESCAPE_RAT_RACE);
         if (btnEscape) {
             const passiveIncome = myData.state.financials?.passive_income ?? 0;
             const totalExpenses = myData.state.financials?.total_expenses ?? 0;
@@ -108,23 +107,20 @@ export function refreshGuestUI(
     }
     // ==========================================
 
-    // 4. 表示対象プレイヤーの決定と財務表示の振り分け
-    const targetId = currentViewTargetId || myUserId;
-    const targetUser = participants.find(p => p.user_id === targetId);
-
-    if (targetUser && targetUser.state) {
-        const isReadOnly = (targetId !== myUserId);
+    // 4. 閲覧対象プレイヤー（自分自身）の財務諸表の更新
+    if (myData && myData.state) {
+        const isReadOnly = false; // 参加者本人の画面のため編集可能
         
         // 財務数値のレンダリング
         renderFinancials(
-            targetUser.state, 
+            myData.state, 
             isReadOnly, 
             callbacks.onVerifySuccess, 
             callbacks.onVerifyFailure
         );
 
         // 資産ポートフォリオのレンダリング
-        renderPortfolio(targetUser.state.financials);
+        renderPortfolio(myData.state.financials);
     }
 
     // 5. 取引カード情報のレンダリング
