@@ -1,33 +1,56 @@
-// guest_app.js 司令塔
+/**
+ * My Game - ゲスト画面 司令塔プログラム
+ */
 
 import { roomId } from './config.js';
 import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { refreshGuestUI } from './guest_disp.js';
+import { DOM_SELECTORS } from './selectors.js'; // 🌟ID管理ファイルをインポート
 
 // 分割したカスタムモジュールから状態とアクションをインポート
 import { guestState } from './guest_state.js';
-import { handleRollDice, handleClaimPaycheck, handleEndTurn } from './guest_actions.js';
+// 🌟追加アクションハンドラー（脱出申請、カード、ローン）をインポート想定に追記
+import { 
+    handleRollDice, 
+    handleClaimPaycheck, 
+    handleEndTurn,
+    handleEscapeRatRace,
+    handleCardAction,
+    handleBankLoanAction
+} from './guest_actions.js';
 
-// HTML要素の取得
-const sectionLogin = document.getElementById('section-login');
-const sectionGuest = document.getElementById('section-guest');
-const inputUsername = document.getElementById('input-username');
-const btnLogin = document.getElementById('btn-login');
-const btnRollDice = document.getElementById('btn-roll-dice');
-const guestDiceResult = document.getElementById('guest-dice-result');
+// DOM_SELECTORS を用いたHTML要素の確実な参照取得
+const SEL_G = DOM_SELECTORS.GUEST;
 
-const btnClaimPaycheck = document.getElementById('btn-claim-paycheck');
-const btnEndTurn = document.getElementById('btn-end-turn');
+const sectionLogin = document.getElementById(SEL_G.LOGIN.SECTION);
+const sectionGuest = document.getElementById(SEL_G.STATUS.SECTION);
+const inputUsername = document.getElementById(SEL_G.LOGIN.INPUT_USERNAME);
+const btnLogin = document.getElementById(SEL_G.LOGIN.BTN_LOGIN);
+const btnRollDice = document.getElementById(SEL_G.CONTROLS.BTN_ROLL_DICE);
+const guestDiceResult = document.getElementById(SEL_G.CONTROLS.DICE_RESULT);
+
+const btnClaimPaycheck = document.getElementById(SEL_G.CONTROLS.BTN_CLAIM_PAYCHECK);
+const btnEndTurn = document.getElementById(SEL_G.CONTROLS.BTN_END_TURN);
+
+// 🌟新常設コントロールボタン群の取得
+const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_CASE);
+const btnBuyRealEstate = document.getElementById(SEL_G.CARD.BTN_BUY_REALESTATE);
+const btnBuyStock = document.getElementById(SEL_G.CARD.BTN_BUY_STOCK);
+const btnSellStock = document.getElementById(SEL_G.CARD.BTN_SELL_STOCK);
+const btnPayDoodad = document.getElementById(SEL_G.CARD.BTN_PAY_DOODAD);
+const btnCardPass = document.getElementById(SEL_G.CARD.BTN_PASS);
+const btnBorrowLoan = document.getElementById(SEL_G.PORTFOLIO.BTN_BORROW_LOAN);
+const btnPaybackLoan = document.getElementById(SEL_G.PORTFOLIO.BTN_PAYBACK_LOAN);
 
 // デバッグ用：localStorageの記憶状態を画面に反映する関数
 function displayLocalStorageStatus() {
     const storedId = getFromStorage('user_id');
     const storedName = getFromStorage('player_name');
 
-    const elId = document.getElementById('debug-storage-id');
-    const elName = document.getElementById('debug-storage-name');
+    const elId = document.getElementById(SEL_G.DEBUG.STORAGE_ID);
+    const elName = document.getElementById(SEL_G.DEBUG.STORAGE_NAME);
 
     if (elId) elId.textContent = storedId ? storedId : "未定義";
     if (elName) elName.textContent = storedName ? storedName : "未定義";
@@ -35,17 +58,15 @@ function displayLocalStorageStatus() {
 
 displayLocalStorageStatus();
 
-const roomEl = document.getElementById('guest-room-id');
+const roomEl = document.getElementById(SEL_G.STATUS.ROOM_ID);
 if (roomEl) roomEl.textContent = roomId || "未指定";
 
-// 🌟【ヘルパー】役割と職業テキストを安全に流し込む関数
+// 役割と職業テキストを安全に流し込む関数
 function updateStatusProfessionUI(state) {
-    const elRole = document.getElementById('guest-role');
-    const elProfession = document.getElementById('guest-profession');
+    const elRole = document.getElementById(SEL_G.STATUS.ROLE);
+    const elProfession = document.getElementById(SEL_G.STATUS.PROFESSION);
     
-    // 役割（role）はシステム管理上の状態
     if (elRole) elRole.textContent = `${state?.role || '一般'}（認証済み）`;
-    // 職業（profession）は公式ルールに基づく職業名
     if (elProfession) elProfession.textContent = state?.profession || '一般';
 }
 
@@ -55,19 +76,18 @@ function updateStatusProfessionUI(state) {
     const existingPlayer = await autoLoginCheck();
 
     if (existingPlayer) {
-        sectionLogin.style.display = 'none';
-        sectionGuest.style.display = 'block';
+        // 🌟方針統一：style.display ではなく hidden 属性の切り替えで制御
+        sectionLogin.hidden = true;
+        sectionGuest.hidden = false;
         
         const username = existingPlayer.state?.name || getFromStorage('player_name') || "ゲスト";
-        const elName = document.getElementById('guest-name');
+        const elName = document.getElementById(SEL_G.STATUS.NAME);
         if (elName) elName.textContent = username;
         
-        // 固定の "一般（再入室）" を廃止し、取得データから職業名をセット
         updateStatusProfessionUI(existingPlayer.state);
-        
         startMonitoring(existingPlayer.user_id);
     } else {
-        sectionLogin.style.display = 'block';
+        sectionLogin.hidden = false;
     }
 })();
 
@@ -81,19 +101,20 @@ btnLogin.addEventListener('click', async () => {
         btnLogin.textContent = '入室処理中...';
         const userId = await executeJoin(username);
         
-        sectionLogin.style.display = 'none';
-        sectionGuest.style.display = 'block';
+        // 🌟hidden 制御
+        sectionLogin.hidden = true;
+        sectionGuest.hidden = false;
         
-        const elName = document.getElementById('guest-name');
+        const elName = document.getElementById(SEL_G.STATUS.NAME);
         if (elName) elName.textContent = username;
         
         startMonitoring(userId);
     } catch (error) {
         if (error.code === '23505') {
             const userId = getFromStorage('user_id');
-            sectionLogin.style.display = 'none';
-            sectionGuest.style.display = 'block';
-            const elName = document.getElementById('guest-name');
+            sectionLogin.hidden = true;
+            sectionGuest.hidden = false;
+            const elName = document.getElementById(SEL_G.STATUS.NAME);
             if (elName) elName.textContent = username;
             
             startMonitoring(userId);
@@ -109,7 +130,6 @@ btnLogin.addEventListener('click', async () => {
  * 手番とUI全体のリアルタイム監視を開始する関数
  */
 function startMonitoring(myUserId) {
-    // 状態管理クラスに自分のIDをセット
     guestState.setMyUserId(myUserId);
 
     // データベース変更に伴うUI再描画の司令塔処理
@@ -119,41 +139,36 @@ function startMonitoring(myUserId) {
         const isMyTurn = guestState.isMyTurn();
         const pending = guestState.getPendingSalary();
         
-        // 🌟【修正】guestState から最新の部屋カードデータを安全に引き出す（未定義時は null を担保）
         const currentRoomCard = guestState.currentCardCache || null;
 
-        // リアルタイム更新のタイミングでも職業・役割表示を最新状態に同期
         if (myData && myData.state) {
             updateStatusProfessionUI(myData.state);
         }
 
-        // 状態の変化に合わせて「サイコロを振る」ボタンの活性状態を制御
-        // (自分の手番、財務ロックなし、かつサイコロ移動前のアクション待ちでない場合のみ有効)
+        // サイコロボタンの活性制御
         if (isMyTurn && !isFinancialsLocked && pending === 0 && btnEndTurn.disabled) {
             btnRollDice.disabled = false;
         } else {
             btnRollDice.disabled = true;
         }
 
+        // 🌟 補足：新設した取引ボタンやローンボタン、脱出申請ボタン自体の disabled 活性制御は、
+        // 状態を集中管理する `refreshGuestUI` 内部にすべての状態を引数として引き渡し、
+        // そこで一括集約して ON/OFF の判断・制御を行うようにバインドします。
         refreshGuestUI(
             guestState.latestParticipants,
             guestState.currentTurnUserIdCache,
             guestState.myUserId,
             guestState.myUserId,
             isFinancialsLocked,
-            currentRoomCard, // 🌟【修正】固定の null を廃止し、取得したリアルタイム共通カードインスタンスをバインド
+            currentRoomCard,
             {
                 onRollDice: () => { btnRollDice.click(); },
                 onVerifySuccess: async () => {
                     if (!myData || !myData.state) return;
                     
-                    // 【データアクセス方針5.2.2適用】全体上書きを廃止し、ロック解除フラグの差分パッチのみを構成
-                    const statePatch = { 
-                        is_calculating: false 
-                    };
-                    
+                    const statePatch = { is_calculating: false };
                     try {
-                        // 差分パッチのみを送信してアトミックにDBマージ
                         await updateParticipantState(guestState.myUserId, statePatch);
                         alert("計算チェックに成功しました！ロックが解除され、サイコロが振れるようになります。");
                     } catch (err) {
@@ -166,7 +181,7 @@ function startMonitoring(myUserId) {
         );
     };
 
-    // --- イベントハンドラーの紐付け（進行ロジックはすべてモジュールへ委譲） ---
+    // --- イベントハンドラーの紐付け（進行・財務ロジックはすべてモジュールへ委譲） ---
     
     // サイコロを振る
     btnRollDice.addEventListener('click', () => {
@@ -178,10 +193,26 @@ function startMonitoring(myUserId) {
         handleClaimPaycheck(btnClaimPaycheck, guestDiceResult);
     });
 
-    // 手番を終了する（もらい忘れ対応）
+    // 手番を終了する
     btnEndTurn.addEventListener('click', () => {
         handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResult);
     });
+
+    // 🌟 新設: ラットレース脱出申請
+    btnEscapeRatRace.addEventListener('click', () => {
+        handleEscapeRatRace(btnEscapeRatRace);
+    });
+
+    // 🌟 新設: カード意思決定アクションボタン群（まとめて共通のアクションハンドラーにドロップタイプを通知）
+    btnBuyRealEstate.addEventListener('click', () => handleCardAction('buy_real_estate'));
+    btnBuyStock.addEventListener('click', () => handleCardAction('buy_stock'));
+    btnSellStock.addEventListener('click', () => handleCardAction('sell_asset'));
+    btnPayDoodad.addEventListener('click', () => handleCardAction('pay_doodad'));
+    btnCardPass.addEventListener('click', () => handleCardAction('pass'));
+
+    // 🌟 新設: 銀行ローン借入・返済アクション
+    btnBorrowLoan.addEventListener('click', () => handleBankLoanAction('borrow'));
+    btnPaybackLoan.addEventListener('click', () => handleBankLoanAction('payback'));
 
     // 参加者のリアルタイム監視
     subscribeToParticipants(roomId, (participants) => {
@@ -189,17 +220,12 @@ function startMonitoring(myUserId) {
         triggerUIRefresh();
     });
 
-    // 部屋状態（手番・ドローカード）のリアルタイム監視
-    // 🌟【修正】モジュール側の購読ハンドラー（supabase_game.js）の payload 構造に基づき、
-    // rooms から通知されたデータを適切にキャッシュへ蓄積できるよう統合
+    // 部屋状態のリアルタイム監視
     subscribeToRoom(roomId, (currentTurnUserId, fullRoomData) => {
         guestState.setCurrentTurnUserId(currentTurnUserId);
-        
-        // もし監視側からカードオブジェクト(game_state.current_card)も伝播されている場合はキャッシュに格納
         if (fullRoomData && fullRoomData.game_state) {
             guestState.currentCardCache = fullRoomData.game_state.current_card;
         }
-        
         triggerUIRefresh();
     });
 }
