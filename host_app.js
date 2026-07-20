@@ -14,6 +14,8 @@ const HOST_USER_ID = 'host-admin-01';
 const listBody = document.getElementById('host-participant-list');
 const btnClearRoom = document.getElementById('btn-clear-room');
 const hostDiceMonitor = document.getElementById('host-dice-monitor');
+// 【追加1】ステータス表示用の要素を取得
+const displayRoomStatus = document.getElementById('host-room-status');
 
 // 手番設定用の入力欄（入室順）とボタン
 const inputNextTurnOrder = document.getElementById('input-next-turn-order');
@@ -66,6 +68,11 @@ if (btnInitialShuffleStart) {
                 alert(data.message);
                 // 【変更】成功時はボタンを無効化したままにし、文字を変える
                 btnInitialShuffleStart.textContent = 'ゲーム開始済み';
+                
+                // 【追加2】成功時に、画面のステータス表示を書き換える
+                if (displayRoomStatus) {
+                    displayRoomStatus.textContent = '現在の部屋ステータス: playing (ゲーム進行中)';
+                }
             } else {
                 alert("エラー: " + data.error);
                 // エラー時はボタンを元に戻す
