@@ -9,7 +9,7 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { refreshGuestUI } from './guest_disp.js';
-import { DOM_SELECTORS } from './dom_selectors.js'; // ⭕️ 実際のファイル名「dom_selectors.js」へ修正完了
+import { DOM_SELECTORS } from './dom_selectors.js';
 
 // 分割したカスタムモジュールから状態とアクションをインポート
 import { guestState } from './guest_state.js';
@@ -20,7 +20,8 @@ import {
     handleEndTurn,
     handleEscapeRatRace,
     handleCardAction,
-    handleBankLoanAction
+    handleBankLoanAction,
+    handleDrawCard // 🌟 新規追加: ドロー用アクションをインポート
 } from './guest_actions.js';
 
 // DOM_SELECTORS を用いたHTML要素の確実な参照取得
@@ -37,7 +38,11 @@ const btnClaimPaycheck = document.getElementById(SEL_G.CONTROLS.BTN_CLAIM_PAYCHE
 const btnEndTurn = document.getElementById(SEL_G.CONTROLS.BTN_END_TURN);
 
 // 🌟新常設コントロールボタン群の取得
-const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_RACE); // ⭕️ 定数定義に合わせ「RACE」へ修正完了
+const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_RACE);
+// 🌟 追加: 新しく設置した山札ドローボタンの取得
+const btnDrawSmallDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_SMALL_DEAL);
+const btnDrawBigDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_BIG_DEAL);
+
 const btnBuyRealEstate = document.getElementById(SEL_G.CARD.BTN_BUY_REALESTATE);
 const btnBuyStock = document.getElementById(SEL_G.CARD.BTN_BUY_STOCK);
 const btnSellStock = document.getElementById(SEL_G.CARD.BTN_SELL_STOCK);
@@ -156,7 +161,7 @@ function startMonitoring(myUserId) {
         refreshGuestUI(
             guestState.latestParticipants,
             guestState.currentTurnUserIdCache,
-            guestState.myUserId, // ⭕️ 第3引数と第4引数の重複バグを解消
+            guestState.myUserId,
             isFinancialsLocked,
             currentRoomCard,
             {
@@ -199,6 +204,23 @@ function startMonitoring(myUserId) {
     btnEscapeRatRace.addEventListener('click', () => {
         handleEscapeRatRace(btnEscapeRatRace);
     });
+
+    // 🌟 追加: 山札からカードを引くイベント
+    if (btnDrawSmallDeal) {
+        btnDrawSmallDeal.addEventListener('click', () => {
+            btnDrawSmallDeal.disabled = true;
+            btnDrawBigDeal.disabled = true;
+            handleDrawCard('small_deal', guestDiceResult);
+        });
+    }
+
+    if (btnDrawBigDeal) {
+        btnDrawBigDeal.addEventListener('click', () => {
+            btnDrawSmallDeal.disabled = true;
+            btnDrawBigDeal.disabled = true;
+            handleDrawCard('big_deal', guestDiceResult);
+        });
+    }
 
     // カード意思決定アクションボタン群
     btnBuyRealEstate.addEventListener('click', () => handleCardAction('buy_real_estate'));
