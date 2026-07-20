@@ -26,47 +26,30 @@ export async function getCurrentTurn(targetRoomId) {
  * 指定した部屋の手番（プレイヤーID）を更新する関数
  * 
  * 【修正経緯】
- * 従来の処理では rooms テーブルの current_turn_user_id を切り替えるだけで、
- * 次のプレイヤー（nextUserId）の last_dice を 0 にリセットする処理が欠落していました。
- * これにより前周の出目が残り、手番開始直後にUIがロックされるバグが発生。
- * 対策として、手番変更前に participants テーブルから新プレイヤーの最新の state を取得し、
- * その中の last_dice を 0 に安全に上書きしてから手番を移行するよう修正しました。
+ * 従来の処理ではフロントサイドで一度state全体を取得（FETCH）し、組み立て直してから
+ * 完全上書き（UPDATE）を行っていたため、ミリ秒単位の競合によるロストアップデートリスクがありました。
+ * 「アトミック部分更新原則」に準拠するため、FETCH処理を撤廃。
+ * データベース層に実装されたRPC 'merge_participant_state' を直接発行し、
+ * 対象プレイヤーの last_dice のみをアトミックに差分更新（0へリセット）した上で手番を移行するよう修正しました。
  * 
  * @param {string} targetRoomId - 部屋ID
  * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
  */
 export async function updateCurrentTurn(targetRoomId, nextUserId) {
     if (nextUserId) {
-        const { data: participant, error: fetchError } = await supabase
-            .from('participants')
-            .select('state')
-            .eq('room_id', targetRoomId)
-            .eq('user_id', nextUserId)
-            .maybeSingle();
+        // 【データアクセス方針5.2.1/5.2.2適用】
+        // クライアントサイドでの完全上書きによる破壊を防ぐため、RPCを用いたアトミック差分マージを実行
+        const { error: updatePlayerError } = await supabase
+            .rpc('merge_participant_state', {
+                target_user_id: nextUserId,
+                state_patch: { last_dice: 0 }
+            });
 
-        if (fetchError) {
-            console.error('移行先プレイヤーの取得失敗:', fetchError);
-            throw fetchError;
+        if (updatePlayerError) {
+            console.error('手番開始時のlast_diceアトミックリセットに失敗:', updatePlayerError);
+            throw updatePlayerError;
         }
-
-        if (participant && participant.state) {
-            const updatedState = {
-                ...participant.state,
-                last_dice: 0
-            };
-
-            const { error: updatePlayerError } = await supabase
-                .from('participants')
-                .update({ state: updatedState })
-                .eq('room_id', targetRoomId)
-                .eq('user_id', nextUserId);
-
-            if (updatePlayerError) {
-                console.error('手番開始時のlast_diceリセットに失敗:', updatePlayerError);
-                throw updatePlayerError;
-            }
-            console.log(`【デバッグ】ユーザー [${nextUserId}] の last_dice を 0 に初期化しました。`);
-        }
+        console.log(`【デバッグ】ユーザー [${nextUserId}] の last_dice を RPC 経由で安全に 0 に初期化しました。`);
     }
 
     const { data, error } = await supabase
