@@ -4,6 +4,50 @@
 import { DOM_SELECTORS } from './dom_selectors.js';
 
 /**
+ * 🌟【新設】4大カードデッキの山札残量を画面に描画する関数
+ * @param {Object} gameState - roomsテーブルから取得したgame_stateオブジェクト
+ */
+export const renderDeckCounts = (gameState) => {
+    const deckSelectors = DOM_SELECTORS.HOST.DECK_MONITOR;
+    
+    // データが存在しない、または初期化前はすべて0を表示
+    if (!gameState || !gameState.decks) {
+        const targetIds = [
+            deckSelectors.SMALL_DEAL_COUNT,
+            deckSelectors.BIG_DEAL_COUNT,
+            deckSelectors.MARKET_COUNT,
+            deckSelectors.DOODAD_COUNT
+        ];
+        targetIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '0';
+        });
+        return;
+    }
+
+    const decks = gameState.decks;
+
+    // 各デッキ配列の長さを計算（配列が存在しない場合は0）
+    const smallDealCount = Array.isArray(decks.small_deal) ? decks.small_deal.length : 0;
+    const bigDealCount = Array.isArray(decks.big_deal) ? decks.big_deal.length : 0;
+    const marketCount = Array.isArray(decks.market) ? decks.market.length : 0;
+    const doodadCount = Array.isArray(decks.doodad) ? decks.doodad.length : 0;
+
+    // dom_selectors.js に定義されたIDを使用して要素へ数値を反映
+    const elSmall = document.getElementById(deckSelectors.SMALL_DEAL_COUNT);
+    const elBig = document.getElementById(deckSelectors.BIG_DEAL_COUNT);
+    const elMarket = document.getElementById(deckSelectors.MARKET_COUNT);
+    const elDoodad = document.getElementById(deckSelectors.DOODAD_COUNT);
+
+    if (elSmall) elSmall.textContent = smallDealCount;
+    if (elBig) elBig.textContent = bigDealCount;
+    if (elMarket) elMarket.textContent = marketCount;
+    if (elDoodad) elDoodad.textContent = doodadCount;
+
+    console.log(`【ホスト山札】残量同期完了 - Small:${smallDealCount}, Big:${bigDealCount}, Market:${marketCount}, Doodad:${doodadCount}`);
+};
+
+/**
  * 画面上のすごろく盤面（各マス）に配置されているコマをすべて消去する関数
  */
 export const clearBoardCells = () => {
