@@ -2,45 +2,80 @@
 
 // 接続クライアントを正確な名前でインポート
 import { supabase } from './supabase_client.js';
-// 【追加】アトミック部分更新用RPCを安全に呼び出すためのインポートを追加
+// アトミック部分更新用RPCを安全に呼び出すためのインポート
 import { updateParticipantState } from './supabase_participants.js';
 
 /**
- * 指定した部屋の現在の手番（プレイヤーID）を取得する関数
+ * 指定した部屋の現在の手番および部屋全体のデータを取得する関数
  * @param {string} targetRoomId - 部屋ID
- * @returns {Promise<string|null>} 現在の手番のuser_id（データがない場合はnull）
+ * @returns {Promise<object|null>} 部屋レコード全体（データがない場合はnull）
  */
-export async function getCurrentTurn(targetRoomId) {
+export async function getRoomData(targetRoomId) {
     const { data, error } = await supabase
         .from('rooms')
-        .select('current_turn_user_id')
+        .select('*')
         .eq('id', targetRoomId)
         .maybeSingle();
 
     if (error) {
-        console.error('rooms取得エラー:', error);
+        console.error('roomsデータ取得エラー:', error);
         throw error;
     }
+    return data;
+}
+
+/**
+ * 指定した部屋の現在の手番（プレイヤーID）を取得する関数
+ * （※互換性および既存のハブ経由での呼び出しを維持）
+ */
+export async function getCurrentTurn(targetRoomId) {
+    const data = await getRoomData(targetRoomId);
     return data ? data.current_turn_user_id : null;
 }
 
 /**
+ * 🌟【新規追加】部屋のゲーム状態（game_stateカラム）を安全に更新する関数
+ * 完全上書きを回避し、既存のgame_stateオブジェクトと部分マージ（パッチ適用）してアトミックに保存します
+ * @param {string} targetRoomId - 部屋ID
+ * @param {object} gameStatePatch - game_state 内にマージしたい差分オブジェクト
+ */
+export async function updateRoomGameState(targetRoomId, gameStatePatch) {
+    try {
+        // 現在の部屋データを一度安全に取得
+        const roomData = await getRoomData(targetRoomId);
+        const currentGameState = roomData?.game_state || {};
+
+        // 破壊を防ぐため、既存の構造を引き継いだ上で差分パッチを適用
+        const updatedGameState = {
+            ...currentGameState,
+            ...gameStatePatch
+        };
+
+        const { data, error } = await supabase
+            .from('rooms')
+            .update({ game_state: updatedGameState })
+            .eq('id', targetRoomId)
+            .select();
+
+        if (error) {
+            console.error('rooms game_state 更新エラー:', error);
+            throw error;
+        }
+        return data;
+    } catch (err) {
+        console.error('updateRoomGameState 内で例外が発生しました:', err);
+        throw err;
+    }
+}
+
+/**
  * 指定した部屋の手番（プレイヤーID）を更新する関数
- * 
- * 【修正経緯】
- * 従来の処理ではフロントサイドで一度state全体を取得（FETCH）し、組み立て直してから
- * 完全上書き（UPDATE）を行っていたため、ミリ秒単位の競合によるロストアップデートリスクがありました。
- * 「アトミック部分更新原則」に準拠するため、FETCH処理を撤廃。
- * データベース層に実装されたRPC 'merge_participant_state' を直接発行し、
- * 対象プレイヤーの last_dice のみをアトミックに差分更新（0へリセット）した上で手番を移行するよう修正しました。
- * 
  * @param {string} targetRoomId - 部屋ID
  * @param {string|null} nextUserId - 次に手番を持つプレイヤーのuser_id
  */
 export async function updateCurrentTurn(targetRoomId, nextUserId) {
     if (nextUserId) {
-        // 【データアクセス方針5.2.1/5.2.2適用】
-        // クライアントサイドでの完全上書きによる破壊を防ぐため、RPCを用いたアトミック差分マージを実行
+        // RPCを用いたアトミック差分マージを実行して last_dice を安全に 0 に初期化
         const { error: updatePlayerError } = await supabase
             .rpc('merge_participant_state', {
                 target_user_id: nextUserId,
@@ -84,7 +119,7 @@ export async function clearRoomParticipants(targetRoomId) {
 
     const { error: roomError } = await supabase
         .from('rooms')
-        .update({ current_turn_user_id: null })
+        .update({ current_turn_user_id: null, game_state: null }) // カード状態も合わせてクリア
         .eq('id', targetRoomId);
 
     if (roomError) {
@@ -97,14 +132,20 @@ export async function clearRoomParticipants(targetRoomId) {
 
 /**
  * 部屋（rooms）の変更をリアルタイムで監視する関数
+ * 🌟手番IDだけでなく、game_state（ドローカード情報）も親（App）へ漏れなく通知できるようコールバック引数を拡張
  * @param {string} targetRoomId - 監視する部屋ID
- * @param {function} onUpdate -データ更新時に実行する関数
+ * @param {function} onUpdate - データ更新時に実行する関数。引数に (current_turn_user_id, fullRoomData) を受け取ります
  */
 export function subscribeToRoom(targetRoomId, onUpdate) {
-    getCurrentTurn(targetRoomId).then((currentTurnUserId) => {
-        onUpdate(currentTurnUserId);
+    // 初回読み込み時のデータ同期
+    getRoomData(targetRoomId).then((roomData) => {
+        if (roomData) {
+            onUpdate(roomData.current_turn_user_id, roomData);
+        } else {
+            onUpdate(null, null);
+        }
     }).catch((err) => {
-        console.error("手番の初期値取得に失敗しました:", err);
+        console.error("部屋の初期値取得に失敗しました:", err);
     });
 
     return supabase
@@ -116,11 +157,15 @@ export function subscribeToRoom(targetRoomId, onUpdate) {
                 console.log("【デバッグ・Realtime受信】rooms変更を検知しました:", payload);
                 
                 let nextTurnUserId = null;
+                let fullRoomData = null;
+                
                 if (payload.eventType !== 'DELETE' && payload.new) {
                     nextTurnUserId = payload.new.current_turn_user_id;
+                    fullRoomData = payload.new;
                 }
                 
-                onUpdate(nextTurnUserId);
+                // 親の guest_app.js へ最新の手番IDと部屋データ全体を安全に流し込む
+                onUpdate(nextTurnUserId, fullRoomData);
             }
         )
         .subscribe();
