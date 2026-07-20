@@ -3,9 +3,25 @@
 import { supabase } from './supabase_client.js';
 
 export async function insertParticipant(roomId, username, userId, initialState) {
+    // 💡 呼び出し元から渡されたダミー職業データ(initialState)を無視し、必ず「未定」状態で初期化する
+    const pendingState = {
+        name: username, // 入力されたプレイヤー名は保持
+        profession: "未定", // ホストが開始ボタンを押すまでは未定
+        financials: {
+            cash: 0,
+            cashflow: 0,
+            income: { salary: 0, passive: 0, total: 0 },
+            expenses: { taxes: 0, mortgage_payment: 0, car_loan_payment: 0, other: 0, total: 0 },
+            liabilities: { mortgage: 0, car_loan: 0, retail_debt: 0 },
+            assets: { stocks: {}, real_estate: {} }
+        },
+        position: 0, // 盤面上の位置
+        last_dice: 0
+    };
+
     const { data, error } = await supabase
         .from('participants')
-        .insert([{ room_id: roomId, user_id: userId, state: initialState }])
+        .insert([{ room_id: roomId, user_id: userId, state: pendingState }])
         .select();
     
     if (error) {
