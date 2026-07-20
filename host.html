@@ -12,6 +12,48 @@
     <h1>My Game - ホスト専用管理画面</h1>
 
     <div id="section-host">
+        
+        <!-- 🌟【新設】部屋ステータス管理・ライフサイクル制御エリア -->
+        <fieldset>
+            <legend>部屋ステータス管理・ライフサイクル制御</legend>
+            <p>
+                現在の部屋ステータス: <b id="host-room-status">waiting (準備中)</b>
+            </p>
+            <p>
+                <button id="btn-initial-shuffle-start">🎲 初期シャッフル＆ゲーム開始</button>
+                <button id="btn-manual-reshuffle">🔄 山札再シャッフル</button>
+                <button id="btn-force-game-end">⚠️ 全員強制退室＆ゲーム終了</button>
+                <button id="btn-initialize-room">♻️ 部屋を初期化する</button>
+            </p>
+        </fieldset>
+
+        <br>
+
+        <!-- 🌟【新設】4種類の山札および使用済みカードの残り枚数監視モニター -->
+        <fieldset>
+            <legend>4大カードデッキ山札残量モニター</legend>
+            <table border="1" cellpadding="5">
+                <thead>
+                    <tr>
+                        <th>Small Deal (好機:小)</th>
+                        <th>Big Deal (好機:大)</th>
+                        <th>Market (市場)</th>
+                        <th>Doodad (無駄遣い)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td align="center"><span id="deck-count-small-deal">0</span> 枚</td>
+                        <td align="center"><span id="deck-count-big-deal">0</span> 枚</td>
+                        <td align="center"><span id="deck-count-market">0</span> 枚</td>
+                        <td align="center"><span id="deck-count-doodad">0</span> 枚</td>
+                    </tr>
+                </tbody>
+            </table>
+        </fieldset>
+
+        <br>
+
         <!-- 最初から配置するサイコロ監視エリア -->
         <fieldset>
             <legend>最新のサイコロ出目（ホスト監視用）</legend>
@@ -165,7 +207,7 @@
                 <tr>
                     <th>入室順</th>
                     <th>プレイヤー名 (ID)</th>
-                    <th>職業</th> <!-- 🌟 職業のカラムヘッダーを追加 -->
+                    <th>職業</th>
                     <th>現在の位置（マス）</th>
                     <th>手持ちキャッシュ</th>
                 </tr>
