@@ -1,7 +1,7 @@
 {
   "system_design": {
     "title": "システム基本設計書",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "last_updated": "2026-07-20",
     "sections": [
       {
@@ -12,6 +12,7 @@
       {
         "section_id": "2",
         "title": "システムアーキテクチャ",
+        "content": "アーキテクチャの概要記述",
         "components": {
           "frontend": "HTML/Vanilla JS (TypeScript互換構成) を用いたSPA（Single Page Application）。UI構築の初期・中期フェーズではCSSを除外する。ホスト用画面には状態遷移ボタンおよび各山札モニターを配備し、ゲスト用画面は部屋ステータスに応じて自動追従・ロックする構成とする。",
           "backend": "Supabase (PostgreSQL, Realtime API, RPC)。サーバーサイドロジックは全てデータベース層のRPC関数として実装し、クライアントからの直接的なデータ操作をセキュアに制限する。部屋の状態管理やカード配布・山札再構築ロジックもRPC内にカプセル化する。",
@@ -33,6 +34,14 @@
           {
             "name": "Card Action Dispatcher（カード実行機構）",
             "description": "ドローされたカードのJSONルール（action_rule）を解析し、Doodad（無駄遣い）、Market（市場売却）、Stock（株式分割等）の各ハンドラへ処理を振り分けるロジックエンジン。使用されたカードのIDを使用済み履歴（graveyard）の該当種別へアトミックに退避する処理を含む。"
+          },
+          {
+            "name": "チート耐性型・サーバーサイド財務検証/演算エンジン群（RPC）",
+            "description": "データ改ざんを構造的に排除するため、財務更新を伴う全アクション（buy_real_estate_asset, buy_stock, borrow_bank_loan, pay_off_bank_loan等）をRPC関数としてユニット化。手元資金の残高、株式の加重平均取得単価、ローン利息（10%）の自動増減、総支出・毎月の手取り（net_cash_flow）への自動反映をデータベース内で一括再計算する。"
+          },
+          {
+            "name": "動的勝利判定（ラットレース脱出）システム",
+            "description": "部屋ごとの『win_condition_mode』に応じて、プレイヤーのアクション時に自動で『不労所得 > 総支出（standard）』または『不労所得 > 総支出 * 2（double）』を動的に検証。条件達成時に該当プレイヤーのフェーズ（game_phase）をアトミックにファーストトラック（fast_track）へ昇格させる。"
           }
         ]
       },
@@ -73,6 +82,11 @@
                 "rule_id": "5.2.4",
                 "item": "ゲームライフサイクルおよびカード山札（Dispatcher）制御のトランザクション担保",
                 "specification": "ホストによる「初期シャッフル＆ゲーム開始（4種のデッキ生成とstatusのplaying移行）」、特定のデッキ要素数が0になった際の「山札再シャッフル（graveyardからのID回収と再編成）」、およびCard Action Dispatcherに定義された複雑な財務変動は、すべてRPCを用いてデータベース内の1トランザクション内でクローズドに実行し、計算・生成途中の不完全な状態や同期の不整合がRealtime APIで配信されることを完全に防御すること。"
+              },
+              {
+                "rule_id": "5.2.5",
+                "item": "悲観的ロック（FOR UPDATE）による多重処理と検証の厳格化",
+                "specification": "資産売買・銀行ローン借入返済・勝利判定などのすべての財務RPC関数は、実行時に必ず対象の部屋（rooms）および参加者（participants）のレコードに対して『FOR UPDATE』を発行して行ロックを強制する。これにより、通信の遅延やボタンの連打によって不整合な二重決済や残高のマイナス、手番外の不正操作が起きるのをデータベース層で100%防御する。"
               }
             ]
           }
