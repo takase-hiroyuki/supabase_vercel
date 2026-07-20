@@ -66,6 +66,14 @@
                 <legend>ドローカード状況</legend>
                 <p>現在場に出ているカードはありません。</p>
                 
+                <!-- 🌟 追加: 山札からカードを引くためのボタン（常設・初期disabled） -->
+                <fieldset id="deck-draw-options">
+                    <legend>山札からカードを引く (Opportunityマス専用)</legend>
+                    <button id="btn-draw-small-deal" disabled>Small Deal (小規模取引) を引く</button>
+                    <button id="btn-draw-big-deal" disabled>Big Deal (大規模取引) を引く</button>
+                </fieldset>
+                <br>
+
                 <!-- 🌟 カードに対する意思決定アクションボタン群を静的常設（disabled制御前提） -->
                 <fieldset id="card-action-options">
                     <legend>カードアクション選択肢</legend>
