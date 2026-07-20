@@ -76,6 +76,12 @@
         "market_tile": {
           "description": "市場（マーケット）マス。資産売却成立時、PL/BSの大きな変動を伴うため計算ロック(phase: 'deal')を発動。"
         }
+      },
+      "3_1_8_card_event_resolution": {
+        "description": "カードが及ぼす財務諸表への動的影響とイベント解決要件",
+        "dynamic_pricing": "Marketカードにおいて、売却価格(price)が文字列（例:'Cost*2'）で定義されている場合、システムは対象プレイヤーの financials.assets から当該資産の取得コストを検索し、動的に売却額を算出しなければならない。",
+        "financed_doodad_processing": "Doodadカードにおいて、is_loan が true の場合、キャッシュからの即時減算ではなく、liabilities への負債追加、および expenses への月々支払い（monthly_payment）の追加として処理されなければならない。",
+        "cascade_updates": "expenses や income.passive に変動があった場合、直ちに cashflow を再計算し、Fast Trackへの移行条件（不労所得 > 総支出）をリアルタイムに評価しなければならない。"
       }
     },
     "3_2_host_screen": {
@@ -107,5 +113,25 @@
     "5_1_atomic_updates": "participantsテーブルのstate列（JSONB）に対するオブジェクト全体の完全上書きを禁止する。差分データのみをPostgreSQL側（Supabase RPC 'merge_participant_state'等）でアトミックにマージ・更新し、ロストアップデートを完全に防ぐ。",
     "5_2_turn_transition_safety": "手番の移行処理時、次プレイヤーの state.last_dice を安全に 0（プリロール状態）へ初期化してから rooms の current_turn_user_id を更新することで、UIの不正な再ロールロックを防止する。",
     "5_3_logic_encapsulation": "複数テーブルや複数行にまたがる状態遷移（一連のステート操作）はクライアント側での分割クエリ実行を避け、データベース内部のRPCとしてカプセル化して1トランザクションで完結させる。"
+  },
+  "6_system_architecture_and_logic_design": {
+    "description": "多様なJSON構造を安全に処理するためのロジック・ディスパッチャ（振分機構）定義",
+    "6_1_card_action_dispatcher": {
+      "design_pattern": "Strategyパターンを用いたルール・ディスパッチャ",
+      "handlers": {
+        "doodad_handler": {
+          "trigger": "deck_type == 'doodad'",
+          "process": "action_rule.is_loan を評価。falseの場合はcashからamountを減算。trueの場合はliabilitiesにamountを加算し、expensesにmonthly_paymentを加算する。"
+        },
+        "market_handler": {
+          "trigger": "deck_type == 'market'",
+          "process": "プレイヤーが条件に合致する symbol の資産を保有しているかチェック。保有している場合、action_rule.price を評価。number型ならその額を提示し、string型（例 'Cost*3'）なら対象資産のcostに乗数を掛けて売却額を動的算出する。"
+        },
+        "stock_event_handler": {
+          "trigger": "action_rule.type が 'stock_split' または 'stock_reverse_split'",
+          "process": "全プレイヤーの保有資産を走査し、action_rule.target_symbol に一致する株数を action_rule.multiplier に基づき一斉に書き換える。"
+        }
+      }
+    }
   }
 }
