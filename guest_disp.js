@@ -10,7 +10,7 @@ import { updateGameControls } from './guest_disp_controls.js';
 // ⭕️ 正しいファイル名「dom_selectors.js」からインポート
 import { DOM_SELECTORS } from './dom_selectors.js';
 
-// 🌟 保留中の給料（pendingSalary）を取得するために状態管理モジュールをインポート
+// 🌟 保留中の給料（pendingSalary）および最新のデータを取得するために状態管理モジュールをインポート
 import { guestState } from './guest_state.js';
 
 /**
@@ -38,8 +38,12 @@ export function refreshGuestUI(
     const turnUser = participants.find(p => p.user_id === currentTurnUserId);
     const turnUserName = turnUser ? turnUser.state.name : null;
 
-    // 自身のstateを取得
-    const myData = participants.find(p => p.user_id === myUserId);
+    // 🌟【修正：$0問題対策】引数のリストから見つからない、またはデータが空の場合、状態管理側から直接最新データを引っ張る
+    let myData = participants.find(p => p.user_id === myUserId);
+    if (!myData || !myData.state || !myData.state.financials) {
+        myData = guestState.getMyData();
+    }
+    
     const myState = myData ? myData.state : null;
     const isMyTurn = (currentTurnUserId === myUserId);
 
@@ -47,7 +51,6 @@ export function refreshGuestUI(
     const pendingSalary = guestState.getPendingSalary() ?? 0;
 
     // 3. 操作ボタン類の活性・非活性および手番インジケータ制御
-    // ⭕️ 引数に「pendingSalary」を追加してコントロール側へ分配
     updateGameControls(
         currentTurnUserId, 
         myUserId, 
@@ -127,7 +130,9 @@ export function refreshGuestUI(
         );
 
         // 資産ポートフォリオのレンダリング
-        renderPortfolio(myData.state.financials);
+        if (myData.state.financials) {
+            renderPortfolio(myData.state.financials);
+        }
     }
 
     // 5. 取引カード情報のレンダリング
