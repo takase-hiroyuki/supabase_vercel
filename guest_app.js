@@ -145,8 +145,8 @@ function startMonitoring(myUserId) {
             updateStatusProfessionUI(myData.state);
         }
 
-        // サイコロボタンの活性制御
-        if (isMyTurn && !isFinancialsLocked && pending === 0 && btnEndTurn.disabled) {
+        // 🌟 サイコロボタンの活性制御：自分の手番、かつ財務ロックがなく、未請求給与がなく、終了ボタンが押されていない、かつ「ゲームがプレイ状態（開始済み）」であること
+        if (isMyTurn && !isFinancialsLocked && pending === 0 && btnEndTurn.disabled && guestState.isGameStarted()) {
             btnRollDice.disabled = false;
         } else {
             btnRollDice.disabled = true;
@@ -220,8 +220,19 @@ function startMonitoring(myUserId) {
     // 部屋状態のリアルタイム監視
     subscribeToRoom(roomId, (currentTurnUserId, fullRoomData) => {
         guestState.setCurrentTurnUserId(currentTurnUserId);
-        if (fullRoomData && fullRoomData.game_state) {
-            guestState.currentCardCache = fullRoomData.game_state.current_card;
+        
+        // 🌟 部屋データの状態（waiting / playing）を抽出し、状態管理へセット
+        if (fullRoomData) {
+            if (fullRoomData.game_state) {
+                guestState.currentCardCache = fullRoomData.game_state.current_card;
+            }
+            // roomsテーブルから受け取ったステータス文字列（waiting or playing）をキャッシュ
+            if (fullRoomData.game_state && fullRoomData.game_state.status) {
+                guestState.setRoomStatus(fullRoomData.game_state.status);
+            } else if (fullRoomData.status) {
+                // game_stateの外側にstatusが配置されているスキーマ設計の場合のフォールバック
+                guestState.setRoomStatus(fullRoomData.status);
+            }
         }
         triggerUIRefresh();
     });
