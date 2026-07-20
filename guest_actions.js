@@ -1,12 +1,23 @@
 // guest_actions.js     (進行・Paycheck・ローン・カード・脱出申請の全アクション一括集約)
 
 import { roomId } from './config.js';
-import { updateParticipantState, updateCurrentTurn, updateRoomGameState } from './supabase.js';
+// 🌟 supabase.js から drawCard をインポートに追加
+import { updateParticipantState, updateCurrentTurn, updateRoomGameState, drawCard } from './supabase.js';
 import { rollDice, calculateNextPosition } from './dice.js';
 import { guestState } from './guest_state.js';
 
 // --- 給料日（Paycheck）マスの配置定義 ---
 const PAYDAY_CELLS = [0, 5, 11, 18];
+
+// 🌟 --- ラットレースのマス定義（全24マス） ---
+// サイコロを振った後、どのマスに止まったかを判定するための配列です。
+const BOARD_CELLS = [
+    'paycheck', 'opportunity', 'doodad', 'opportunity', 'market',
+    'paycheck', 'opportunity', 'charity', 'opportunity', 'doodad',
+    'opportunity', 'paycheck', 'market', 'opportunity', 'baby',
+    'opportunity', 'doodad', 'opportunity', 'paycheck', 'opportunity',
+    'market', 'opportunity', 'doodad', 'opportunity'
+];
 
 /**
  * 移動経路中に通過または着地したPaycheckの総支給額を算出する
@@ -59,7 +70,9 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
             last_dice: diceRoll
         };
 
-        guestDiceResult.textContent = `移動完了: 出目=${diceRoll}, 位置=${nextPosition}。アクションを選択してください。`;
+        // 🌟 止まったマスの種類を判定
+        const cellType = BOARD_CELLS[nextPosition];
+        guestDiceResult.textContent = `移動完了: 出目=${diceRoll}, 位置=${nextPosition}（${cellType}）。`;
         
         await updateParticipantState(guestState.myUserId, statePatch);
 
@@ -67,15 +80,61 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
         if (pending > 0) {
             btnClaimPaycheck.disabled = false;
             btnClaimPaycheck.textContent = `Paycheckを請求する (+$${pending})`;
+            guestDiceResult.textContent += ` まずは給料を請求してください。`;
         } else {
             btnClaimPaycheck.disabled = true;
             btnClaimPaycheck.textContent = `Paycheckを請求する`;
+            
+            // 給料が発生していない場合は即座にカードドローの判定へ進む
+            if (cellType === 'doodad' || cellType === 'market') {
+                await handleDrawCard(cellType, guestDiceResult);
+            } else if (cellType === 'opportunity') {
+                guestDiceResult.textContent += ` Small DealかBig Dealを選択してください。`;
+            }
         }
         btnEndTurn.disabled = false;
 
     } catch (error) {
         guestDiceResult.textContent = `例外発生: ${error.message}`;
         btnRollDice.disabled = false;
+    }
+}
+
+/**
+ * 🌟 山札からカードを引き、部屋全体（ホスト画面含む）に表示するアクション
+ */
+export async function handleDrawCard(deckType, guestDiceResult) {
+    if (!guestState.isGameStarted()) return;
+
+    try {
+        guestDiceResult.textContent = `カードを引いています...`;
+        
+        // 1. データベース側のRPCを呼び出してカードをドロー＆ロック処理
+        const result = await drawCard(roomId, guestState.myUserId, deckType);
+        
+        if (!result.success) {
+            alert(result.error);
+            guestDiceResult.textContent = `エラー: ${result.error}`;
+            return;
+        }
+
+        // 2. 引いたカードの情報を rooms テーブルの game_state.current_card にセットし、全員に共有
+        const currentCardData = {
+            id: result.card_id,
+            type: deckType, // 'small_deal', 'big_deal' など
+            title: result.title,
+            description: result.description,
+            status: "active" // 行動待ち状態（ここから売買や支払いに繋がる）
+        };
+
+        await updateRoomGameState(roomId, { current_card: currentCardData });
+
+        guestDiceResult.textContent = `【${result.title}】を引きました！内容を確認し、アクションを選択してください。`;
+
+    } catch (error) {
+        console.error('カードドローエラー:', error);
+        alert('カードの取得に失敗しました。');
+        guestDiceResult.textContent = `カードの取得に失敗しました。`;
     }
 }
 
@@ -108,6 +167,16 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
         btnClaimPaycheck.textContent = `Paycheckを請求する`;
 
         await updateParticipantState(guestState.myUserId, statePatch);
+
+        // 🌟 給料の請求が終わった後、止まったマスがカードマスならドロー判定を行う
+        const currentPosition = myData.state.position ?? 0;
+        const cellType = BOARD_CELLS[currentPosition];
+
+        if (cellType === 'doodad' || cellType === 'market') {
+            await handleDrawCard(cellType, guestDiceResult);
+        } else if (cellType === 'opportunity') {
+            guestDiceResult.textContent += ` 続けて、Small DealかBig Dealを選択してください。`;
+        }
 
     } catch (error) {
         alert('Paycheckの請求処理に失敗しました。');
