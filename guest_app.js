@@ -118,6 +118,9 @@ function startMonitoring(myUserId) {
         const isFinancialsLocked = guestState.isFinancialsLocked();
         const isMyTurn = guestState.isMyTurn();
         const pending = guestState.getPendingSalary();
+        
+        // 🌟【修正】guestState から最新の部屋カードデータを安全に引き出す（未定義時は null を担保）
+        const currentRoomCard = guestState.currentCardCache || null;
 
         // リアルタイム更新のタイミングでも職業・役割表示を最新状態に同期
         if (myData && myData.state) {
@@ -138,7 +141,7 @@ function startMonitoring(myUserId) {
             guestState.myUserId,
             guestState.myUserId,
             isFinancialsLocked,
-            null,
+            currentRoomCard, // 🌟【修正】固定の null を廃止し、取得したリアルタイム共通カードインスタンスをバインド
             {
                 onRollDice: () => { btnRollDice.click(); },
                 onVerifySuccess: async () => {
@@ -186,9 +189,17 @@ function startMonitoring(myUserId) {
         triggerUIRefresh();
     });
 
-    // 部屋状態（手番）のリアルタイム監視
-    subscribeToRoom(roomId, (currentTurnUserId) => {
+    // 部屋状態（手番・ドローカード）のリアルタイム監視
+    // 🌟【修正】モジュール側の購読ハンドラー（supabase_game.js）の payload 構造に基づき、
+    // rooms から通知されたデータを適切にキャッシュへ蓄積できるよう統合
+    subscribeToRoom(roomId, (currentTurnUserId, fullRoomData) => {
         guestState.setCurrentTurnUserId(currentTurnUserId);
+        
+        // もし監視側からカードオブジェクト(game_state.current_card)も伝播されている場合はキャッシュに格納
+        if (fullRoomData && fullRoomData.game_state) {
+            guestState.currentCardCache = fullRoomData.game_state.current_card;
+        }
+        
         triggerUIRefresh();
     });
 }
