@@ -1,4 +1,4 @@
-// guest_state.js      (新設：未請求のPaycheck状態や手番判定などのデータ管理)
+// guest_state.js       (新設：未請求のPaycheck状態や手番判定などのデータ管理)
 
 /**
  * ゲスト画面のゲーム進行状態を管理するクラス
@@ -9,6 +9,7 @@ class GuestStateManager {
         this.currentTurnUserIdCache = null;
         this.myUserId = null;
         this.pendingSalary = 0; // 未請求のPaycheck額（もらい忘れ判定用）
+        this.currentCardCache = null; // 🌟【追加】現在部屋で開かれているカードデータをキャッシュするプロパティ
     }
 
     // 自分のユーザーIDを設定
