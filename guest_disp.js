@@ -10,6 +10,9 @@ import { updateGameControls } from './guest_disp_controls.js';
 // ⭕️ 正しいファイル名「dom_selectors.js」からインポート
 import { DOM_SELECTORS } from './dom_selectors.js';
 
+// 🌟 保留中の給料（pendingSalary）を取得するために状態管理モジュールをインポート
+import { guestState } from './guest_state.js';
+
 /**
  * 【ゲストUIハブ】
  * リアルタイム同期で受け取った全てのデータ分配と状態遷移を制御する
@@ -40,13 +43,18 @@ export function refreshGuestUI(
     const myState = myData ? myData.state : null;
     const isMyTurn = (currentTurnUserId === myUserId);
 
+    // 🌟 現在クライアント側にキープされている未請求の給料額を取得
+    const pendingSalary = guestState.getPendingSalary() ?? 0;
+
     // 3. 操作ボタン類の活性・非活性および手番インジケータ制御
+    // ⭕️ 引数に「pendingSalary」を追加してコントロール側へ分配
     updateGameControls(
         currentTurnUserId, 
         myUserId, 
         turnUserName, 
         isFinancialsLocked, 
         myState,
+        pendingSalary,
         callbacks.onRollDice
     );
 
@@ -95,7 +103,6 @@ export function refreshGuestUI(
         }
 
         // ⑤ ラットレース脱出申請ボタンの活性制御
-        // ⭕️ 正しい変数定義「BTN_ESCAPE_RAT_RACE」へ修正完了
         const btnEscape = document.getElementById(DOM_SELECTORS.GUEST.CONTROLS.BTN_ESCAPE_RAT_RACE);
         if (btnEscape) {
             const passiveIncome = myData.state.financials?.passive_income ?? 0;
