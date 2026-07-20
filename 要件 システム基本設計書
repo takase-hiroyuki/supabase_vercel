@@ -1,20 +1,20 @@
 {
   "system_design": {
     "title": "システム基本設計書",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "last_updated": "2026-07-20",
     "sections": [
       {
         "section_id": "1",
         "title": "システム概要",
-        "content": "本システムは、Supabaseをバックエンドに採用した完全リアルタイム同期型の「キャッシュフローゲーム」進行管理システムである。物理的なボードゲームの進行状況、各プレイヤーの財務諸表（PL/BS）、手番の移行、カードイベントの処理をデータベース上で一元管理し、全クライアントへミリ秒単位で同期する。"
+        "content": "本システムは、Supabaseをバックエンドに採用した完全リアルタイム同期型の「キャッシュフローゲーム」進行管理システムである。物理的なボードゲームの進行状況、部屋のライフサイクル状態、各プレイヤーの財務諸表（PL/BS）、手番の移行、カードイベントの処理をデータベース上で一元管理し、全クライアントへミリ秒単位で同期する。"
       },
       {
         "section_id": "2",
         "title": "システムアーキテクチャ",
         "components": {
-          "frontend": "HTML/Vanilla JS (TypeScript互換構成) を用いたSPA（Single Page Application）。UI構築の初期・中期フェーズではCSSを除外する。",
-          "backend": "Supabase (PostgreSQL, Realtime API, RPC)。サーバーサイドロジックは全てデータベース層のRPC関数として実装し、クライアントからの直接的なデータ操作をセキュアに制限する。",
+          "frontend": "HTML/Vanilla JS (TypeScript互換構成) を用いたSPA（Single Page Application）。UI構築の初期・中期フェーズではCSSを除外する。ホスト用画面には状態遷移ボタンおよび各山札モニターを配備し、ゲスト用画面は部屋ステータスに応じて自動追従・ロックする構成とする。",
+          "backend": "Supabase (PostgreSQL, Realtime API, RPC)。サーバーサイドロジックは全てデータベース層のRPC関数として実装し、クライアントからの直接的なデータ操作をセキュアに制限する。部屋の状態管理やカード配布・山札再構築ロジックもRPC内にカプセル化する。",
           "communication": "WebSocketによるリアルタイム双方向同期（Supabase Realtime）。"
         }
       },
@@ -24,22 +24,22 @@
         "features": [
           {
             "name": "ホスト（ゲームマスター）機能",
-            "description": "セッション管理、盤面全体のリアルタイム監視、キック制御、カードドローの中央管理。"
+            "description": "セッション管理、盤面全体のリアルタイム監視、キック制御、カードドローの中央管理。および、部屋ステータス（waiting, playing, ended）に応じたゲームライフサイクル統制機能（初期シャッフル、山札再構築、強制終了、部屋初期化）。"
           },
           {
             "name": "ゲスト（プレイヤー）機能",
-            "description": "ダイスロール、コマ移動、財務諸表（PL/BS）の入力・バリデーション、他プレイヤーの財務状況の参照。"
+            "description": "ダイスロール、コマ移動、財務諸表（PL/BS）の入力・バリデーション、他プレイヤーの財務状況の参照。部屋ステータスがplayingになるまでの入室待機制御、およびended移行時の自動退室・操作ロック機能。"
           },
           {
             "name": "Card Action Dispatcher（カード実行機構）",
-            "description": "ドローされたカードのJSONルール（action_rule）を解析し、Doodad（無駄遣い）、Market（市場売却）、Stock（株式分割等）の各ハンドラへ処理を振り分けるロジックエンジン。"
+            "description": "ドローされたカードのJSONルール（action_rule）を解析し、Doodad（無駄遣い）、Market（市場売却）、Stock（株式分割等）の各ハンドラへ処理を振り分けるロジックエンジン。使用されたカードのIDを使用済み履歴（graveyard）の該当種別へアトミックに退避する処理を含む。"
           }
         ]
       },
       {
         "section_id": "4",
         "title": "データベース設計概要",
-        "content": "システムは主に3つのテーブルで構成される。マスターデータとなる『cards』、セッションを管理する『rooms』、各プレイヤーの動的状態（財務・現在地・属性など）をJSONB形式で保持する『participants』。詳細なデータ構造および制約はスキーマ定義書（schema.json）に準拠する。"
+        "content": "システムは主に3つのテーブルで構成される。マスターデータとなる『cards』、セッションおよび4種類個別の山札（decks）・使用済み履歴（graveyard）と部屋状態（status）を内包する『rooms』、各プレイヤーの動的状態（財務・現在地・属性など）をJSONB形式で保持する『participants』。詳細なデータ構造および制約はスキーマ定義書（schema.json）に準拠する。"
       },
       {
         "section_id": "5",
@@ -56,23 +56,23 @@
             "rules": [
               {
                 "rule_id": "5.2.1",
-                "item": "JSONB列（state）に対する全体上書き更新の全面禁止",
-                "specification": "participantsテーブルのstate列を更新する際、フロントエンドからupdate({ state: newState })のようにオブジェクト全体を送信する処理を全面的に禁止する。"
+                "item": "JSONB列（state, game_state）に対する全体上書き更新の全面禁止",
+                "specification": "participantsテーブルのstate列、およびroomsテーブルのgame_state列を更新する際、フロントエンドからオブジェクト全体を送信して完全上書きする処理を全面的に禁止する。"
               },
               {
                 "rule_id": "5.2.2",
                 "item": "jsonb_set等を用いたアトミックな部分更新の義務化",
-                "specification": "特定のステート（手持ちキャッシュ、出目等）のみを変更する場合は、PostgreSQLのjsonb_set演算子、またはマージ演算子を直接SQLまたはSupabaseのRPC経由で発行し、データベース層で直接、差分データのみをアトミックに書き換えること。"
+                "specification": "特定のステート（手持ちキャッシュ、出目、現在のアクティブカード等）のみを変更する場合は、PostgreSQLのjsonb_set演算子、またはマージ演算子を直接SQLまたはSupabaseのRPC経由で発行し、データベース層で直接、差分データのみをアトミックに書き換えること。"
               },
               {
                 "rule_id": "5.2.3",
                 "item": "手番・状態制御のRPC（ストアドプロシージャ）カプセル化",
-                "specification": "「手番終了と次プレイヤーの初期化」や「全員のダイスロック解除」など、複数行や複数テーブルをまたぐ一連のステート遷移は、クライアントサイドでのSELECTしてからUPDATEという分割処理を禁止する。これらはすべてSupabaseのRPCとしてデータベース内部にPL/pgSQL等でカプセル化し、1トランザクションで完結させる。"
+                "specification": "「手番終了と次プレイヤーの初期化」や「初期入室時の登録フェーズ」など、複数行や複数テーブルをまたぐ一連のステート遷移は、クライアントサイドでのSELECTしてからUPDATEという分割処理を禁止する。これらはすべてSupabaseのRPCとしてデータベース内部にPL/pgSQL等でカプセル化し、1トランザクションで完結させる。"
               },
               {
                 "rule_id": "5.2.4",
-                "item": "カードロジック（Dispatcher）実行のトランザクション担保",
-                "specification": "Doodadのローン処理に伴う支出・負債の同時更新、およびStockルールの全プレイヤー一斉保有数更新など、Card Action Dispatcherに定義された複雑な財務（PL/BS）変動および波及的再計算（Cascade Updates）は、RPCを用いて1トランザクション内で実行し、計算途中の不完全な状態がRealtime APIで配信されることを防ぐこと。"
+                "item": "ゲームライフサイクルおよびカード山札（Dispatcher）制御のトランザクション担保",
+                "specification": "ホストによる「初期シャッフル＆ゲーム開始（4種のデッキ生成とstatusのplaying移行）」、特定のデッキ要素数が0になった際の「山札再シャッフル（graveyardからのID回収と再編成）」、およびCard Action Dispatcherに定義された複雑な財務変動は、すべてRPCを用いてデータベース内の1トランザクション内でクローズドに実行し、計算・生成途中の不完全な状態や同期の不整合がRealtime APIで配信されることを完全に防御すること。"
               }
             ]
           }
