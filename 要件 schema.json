@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Cashflow Game Database Schema (Updated v3)",
-  "description": "Supabase上のrooms, participants, cardsテーブルの厳密なデータ構造とロジック定義。ホストによる山札シャッフル・ゲームライフサイクル制御対応版。",
+  "title": "Cashflow Game Database Schema (Updated v4)",
+  "description": "Supabase上のrooms, participants, cardsテーブルの厳密なデータ構造とロジック定義。ホストによる山札シャッフル・ゲームライフサイクル制御およびRPCによる財務検証制御の完全対応版。",
   "type": "object",
   "properties": {
     "board_settings": {
@@ -132,7 +132,7 @@
                 "required": ["status", "card_id", "deck_type", "title"]
               }
             },
-            "required": ["status"]
+            "required": ["status", "decks", "graveyard", "current_card"]
           }
         },
         "required": ["id", "game_state"]
@@ -156,7 +156,7 @@
               "track": { "type": "string", "enum": ["rat_race", "fast_track"] },
               "position": { "type": "number", "minimum": 0, "maximum": 23 },
               "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
-              "is_calculating": { "type": "boolean", "description": "財務計算のための入力ロック状態フラグ" },
+              "is_calculating": { "type": "boolean", "description": "財務計算のための検証・入力ロック状態フラグ。RPCでの正確な答え合わせによる承認が下りるまでTrueを維持し、次進行動を制限する" },
               "calculation_phase": { "type": "string", "enum": ["income_tax", "payday", "deal", "none"] },
               "children_count": { "type": "number", "minimum": 0, "maximum": 3 },
               "charity_turns_left": { "type": "number", "minimum": 0 },
@@ -164,8 +164,8 @@
               "financials": {
                 "type": "object",
                 "properties": {
-                  "cash": { "type": "number" },
-                  "cashflow": { "type": "number", "description": "毎月のキャッシュフロー純額(総収入 - 総支出)" },
+                  "cash": { "type": "number", "description": "手持ちキャッシュの絶対真実。RPCによるアトミックな増減操作の対象フィールド" },
+                  "cashflow": { "type": "number", "description": "毎月のキャッシュフロー純額(総収入 - 総支出)。RPC側の検算ロジックと常時同期" },
                   "income": { 
                     "type": "object", 
                     "properties": { 
@@ -185,7 +185,7 @@
                       "other": { "type": "number" }, 
                       "total": { "type": "number" } 
                     },
-                    "required": ["taxes", "total"]
+                    "required": ["taxes", "mortgage_payment", "car_loan_payment", "child_expense", "other", "total"]
                   },
                   "assets": { 
                     "type": "object", 
@@ -214,7 +214,7 @@
                 "required": ["cash", "cashflow", "income", "expenses", "assets", "liabilities"]
               }
             },
-            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "financials"]
+            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "calculation_phase", "children_count", "charity_turns_left", "downsized_turns_left", "financials"]
           }
         },
         "required": ["room_id", "user_id", "state"]
