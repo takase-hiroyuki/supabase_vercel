@@ -2,6 +2,8 @@
 
 // 接続クライアントを正確な名前でインポート
 import { supabase } from './supabase_client.js';
+// 【追加】アトミック部分更新用RPCを安全に呼び出すためのインポートを追加
+import { updateParticipantState } from './supabase_participants.js';
 
 /**
  * 指定した部屋の現在の手番（プレイヤーID）を取得する関数
