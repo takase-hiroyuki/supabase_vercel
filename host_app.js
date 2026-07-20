@@ -69,9 +69,9 @@ if (btnInitialShuffleStart) {
                 // 【変更】成功時はボタンを無効化したままにし、文字を変える
                 btnInitialShuffleStart.textContent = 'ゲーム開始済み';
                 
-                // 【追加2】成功時に、画面のステータス表示を書き換える
+                // 【追加2・修正】HTML側の固定文字との重複を防ぐため、状態の文字列のみをセットする
                 if (displayRoomStatus) {
-                    displayRoomStatus.textContent = '現在の部屋ステータス: playing (ゲーム進行中)';
+                    displayRoomStatus.textContent = 'playing (ゲーム進行中)';
                 }
             } else {
                 alert("エラー: " + data.error);
@@ -161,7 +161,7 @@ if (btnKickParticipant && inputKickOrder) {
         const orderValue = parseInt(inputKickOrder.value.trim(), 10);
         
         if (isNaN(orderValue) || orderValue < 1 || orderValue > latestParticipants.length) {
-            alert(`有効な退室者の番号（1 から ${latestParticipants.length} の間）を入力してください。`);
+            alert(`Valid sequence (between 1 and ${latestParticipants.length}) is required.`);
             return;
         }
 
