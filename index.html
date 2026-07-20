@@ -35,7 +35,7 @@
             <p>部屋ID: <span id="guest-room-id">-</span></p>
             <p>プレイヤー名: <span id="guest-name">-</span></p>
             <p><b>手持ちキャッシュ: $<span id="display-current-cash">0</span></b></p>
-            <p>割り当てられた職業: <span id="guest-profession">確認中...</span></p> <!-- 🌟 職業表示用の要素を追加 -->
+            <p>割り当てられた職業: <span id="guest-profession">確認中...</span></p>
             <p>現在の役割: <span id="guest-role">確認中...</span></p>
         </fieldset>
 
@@ -53,6 +53,8 @@
             <p id="manual-action-area">
                 <button id="btn-claim-paycheck" disabled>Paycheckを請求する</button>
                 <button id="btn-end-turn" disabled>手番を終了する</button>
+                <!-- 🌟 サーバーサイド勝利判定RPCと連動する脱出申請ボタンを常設 -->
+                <button id="btn-escape-rat-race" disabled>ラットレース脱出を申請する</button>
             </p>
         </fieldset>
 
@@ -62,7 +64,17 @@
         <div id="card-display-container">
             <fieldset>
                 <legend>ドローカード状況</legend>
-                <p>現在場に出ているカードはありません。</p>
+                <p>現在场に出ているカードはありません。</p>
+                
+                <!-- 🌟 カードに対する意思決定アクションボタン群を静的常設（disabled制御前提） -->
+                <fieldset id="card-action-options">
+                    <legend>カードアクション選択肢</legend>
+                    <button id="btn-card-buy-realestate" disabled>この不動産/ビジネスを購入する</button>
+                    <button id="btn-card-buy-stock" disabled>この株式/ファンドを購入する</button>
+                    <button id="btn-card-sell-stock" disabled>保有する該当資産を市場に売却する</button>
+                    <button id="btn-card-pay-doodad" disabled>無駄遣い(Doodad)の費用を支払う</button>
+                    <button id="btn-card-pass" disabled>このカードのアクションをパスする/終了する</button>
+                </fieldset>
             </fieldset>
         </div>
 
@@ -112,6 +124,16 @@
         <div id="portfolio-container">
             <fieldset>
                 <legend>資産・負債状況</legend>
+                
+                <!-- 🌟 財務計算ロック中でない自手番時にいつでも操作可能なローン管理パネル -->
+                <fieldset id="bank-loan-control">
+                    <legend>銀行ローン操作 (手番中の財務変動前に利用可能)</legend>
+                    <button id="btn-borrow-loan" disabled>銀行ローンを借り入れる (+$1,000単位)</button>
+                    <button id="btn-payback-loan" disabled>銀行ローンを返済する (-$1,000単位)</button>
+                </fieldset>
+                
+                <br>
+                
                 <p>■ 資産 (Assets)</p>
                 <ul>
                     <li>株（銘柄/数/平均単価）: <span id="display-portfolio-stocks">なし</span></li>
@@ -122,6 +144,9 @@
                     <li>住宅ローン: <span id="display-liability-mortgage">0</span></li>
                     <li>自動車ローン: <span id="display-liability-carloan">0</span></li>
                     <li>小売つけのツケ: <span id="display-liability-retail">0</span></li>
+                    <!-- 🌟 サーバーサイドで10%の利息が自動計算される手動借入ローン項目を追加 -->
+                    <li><b>銀行ローン残高 (Bank Loan): $<span id="display-liability-bankloan">0</span></b></li>
+                    <li><b>（うち毎月のローン利息支出）: $<span id="display-expense-loaninterest">0</span></b></li>
                 </ul>
             </fieldset>
         </div>
