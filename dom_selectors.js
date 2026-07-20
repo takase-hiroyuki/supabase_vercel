@@ -1,3 +1,5 @@
+// dom_selectors.js
+
 /**
  * My Game - DOMセレクター定数定義ファイル
  * host.html および index.html (guest) 内のすべての静的HTML要素のIDを一括管理します。
