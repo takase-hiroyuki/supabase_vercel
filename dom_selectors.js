@@ -28,7 +28,7 @@ export const DOM_SELECTORS = {
             NAME: 'guest-name',
             DISPLAY_CURRENT_CASH: 'display-current-cash', // ★ $0 問題のターゲットID
             ROLE: 'guest-role',
-            PROFESSION: 'guest-profession' // 🌟【追加】ゲスト画面に職業名（教師・パイロット等）を表示する用
+            PROFESSION: 'guest-profession' // 🌟ゲスト画面に職業名（教師・パイロット等）を表示する用
         },
 
         // 手番・サイコロ制御エリア
@@ -82,6 +82,23 @@ export const DOM_SELECTORS = {
     HOST: {
         SECTION: 'section-host',
         
+        // 🌟【新設】部屋ステータス管理・ライフサイクル制御エリア
+        LIFECYCLE: {
+            DISPLAY_ROOM_STATUS: 'host-room-status',              // 現在の部屋ステータス表示用
+            BTN_INITIAL_SHUFFLE: 'btn-initial-shuffle-start',     // 初期シャッフル＆ゲーム開始ボタン
+            BTN_MANUAL_RESHUFFLE: 'btn-manual-reshuffle',         // 山札再シャッフルボタン
+            BTN_FORCE_GAME_END: 'btn-force-game-end',             // 全員強制退室＆ゲーム終了ボタン
+            BTN_INITIALIZE_ROOM: 'btn-initialize-room'            // 部屋を初期化するボタン
+        },
+
+        // 🌟【新設】4種類の山札および使用済みカードの残り枚数監視モニター
+        DECK_MONITOR: {
+            SMALL_DEAL_COUNT: 'deck-count-small-deal',
+            BIG_DEAL_COUNT: 'deck-count-big-deal',
+            MARKET_COUNT: 'deck-count-market',
+            DOODAD_COUNT: 'deck-count-doodad'
+        },
+
         // サイコロ監視エリア
         DICE_MONITOR: 'host-dice-monitor',
 
@@ -101,7 +118,7 @@ export const DOM_SELECTORS = {
         // 参加者名簿テーブル
         PARTICIPANT_LIST: 'host-participant-list',
         
-        // 🌟【追加】名簿の各行（DOM行生成時やセレクター特定用）で利用するクラス・属性の識別子
+        // 名簿の各行（DOM行生成時やセレクター特定用）で利用するクラス・属性の識別子
         PARTICIPANT_ITEM: {
             ROW_CLASS: 'host-participant-row',
             PROFESSION_CLASS: 'host-participant-profession' 
