@@ -3,7 +3,6 @@
 import { roomId } from './config.js';
 import { saveToStorage, getFromStorage } from './storage.js';
 import { insertParticipant, getCurrentTurn, updateCurrentTurn, checkExistingParticipant } from './supabase.js';
-import { getRandomJob } from './jobs.js';
 
 /**
  * 【自動ログイン・再入室チェック】
@@ -40,32 +39,21 @@ export async function executeJoin(username) {
     
     saveToStorage('player_name', username);
 
-    // 12種類の職業から1つをランダムに選出し、schema.json に完全準拠した初期データを構築する
-    const selectedJob = getRandomJob();
-
-    // 【公式ルール対応】初期手持ちキャッシュ = 貯蓄(jobsデータ内のcash) + マンスリーキャッシュフロー(cashflow) を算出
-    const initialSavings = selectedJob.financials.cash ?? 0;
-    const monthlyCashFlow = selectedJob.financials.cashflow ?? 0;
-    const correctInitialCash = initialSavings + monthlyCashFlow;
-
+    // データベース側で強制的に「未定」の完全な初期データに上書きされるため、
+    // ここでは最低限のメタデータ（名前、ロール、トラッキング状態など）のみを渡す
     const initialState = {
         name: username,
         role: "general",                    // 🌟要件定義書に基づき、日本語からシステム識別子 "general" へ統一
-        profession: selectedJob.profession, // 各自の選択された職業名（教師、パイロット等）を保持
         track: "rat_race",
         position: 0,
         last_dice: 0,
         is_calculating: false,              // 🌟初期ゲームロックを完全に回避するため、入室時は作業可能（false）にする
-        calculation_phase: null,            // 🌟ゲーム開始直後は筆算フェーズではないため null に初期化
-        financials: {
-            ...selectedJob.financials,
-            cash: correctInitialCash        // 公式ルールに基づいた初期手持ちキャッシュで上書き
-        }
+        calculation_phase: null             // 🌟ゲーム開始直後は筆算フェーズではないため null に初期化
     };
     
     try {
         // データベース（Supabase）に新規登録を実行
-        // 引数に4つ目のパラメータ（initialState）を渡し、初期ステータス（JSONB型）を直接流し込む
+        // 実際の職業データやキャッシュなどの初期化は supabase_participants.js の内部で行われる
         await insertParticipant(roomId, username, userId, initialState);
     } catch (error) {
         // 重複入室時の一意制約違反（エラーコード: 23505）の場合は、
@@ -78,12 +66,9 @@ export async function executeJoin(username) {
         }
     }
     
-    // 現在の部屋の手番を確認し、空であれば最初の入室者を自動で手番に設定する
-    const currentTurn = await getCurrentTurn(roomId);
-    if (!currentTurn) {
-        await updateCurrentTurn(roomId, userId);
-        console.log("【デバッグ】最初の入室者のため、手番に設定しました:", userId);
-    }
+    // 💡 注意: 手番の自動設定は削除しています。
+    // 手番は「ホストがゲーム開始ボタンを押した際のSQL(RPC)」でランダムに決定されるため、
+    // ここで最初に入室した人を固定で手番にしてしまう処理は競合の原因になるため省きました。
     
     return userId;
 }
