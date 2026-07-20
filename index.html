@@ -28,8 +28,8 @@
         </fieldset>
     </div>
 
-    <!-- 2. あなたのステータス表示エリア（入室後に表示、初期状態は hidden 属性で制御） -->
-    <div id="section-guest" hidden>
+    <!-- 2. あなたのステータス表示エリア（教育的UI思想に基づき、hidden属性を完全排除して常時配置） -->
+    <div id="section-guest">
         <fieldset>
             <legend>あなたのステータス</legend>
             <p>部屋ID: <span id="guest-room-id">-</span></p>
@@ -64,7 +64,7 @@
         <div id="card-display-container">
             <fieldset>
                 <legend>ドローカード状況</legend>
-                <p>現在场に出ているカードはありません。</p>
+                <p>現在場に出ているカードはありません。</p>
                 
                 <!-- 🌟 カードに対する意思決定アクションボタン群を静的常設（disabled制御前提） -->
                 <fieldset id="card-action-options">
