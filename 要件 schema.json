@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Cashflow Game Database Schema (Updated v2)",
-  "description": "Supabase上のrooms, participants, cardsテーブルの厳密なデータ構造とロジック定義",
+  "title": "Cashflow Game Database Schema (Updated v3)",
+  "description": "Supabase上のrooms, participants, cardsテーブルの厳密なデータ構造とロジック定義。ホストによる山札シャッフル・ゲームライフサイクル制御対応版。",
   "type": "object",
   "properties": {
     "board_settings": {
@@ -62,6 +62,7 @@
     },
     "rooms": {
       "type": "array",
+      "description": "Supabase上のroomsテーブルのレコード配列",
       "items": {
         "type": "object",
         "properties": {
@@ -70,13 +71,41 @@
           "game_state": {
             "type": "object",
             "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["waiting", "playing", "ended"],
+                "default": "waiting",
+                "description": "部屋のライフサイクル状態。waiting=準備中(入室可), playing=進行中(シャッフル完了・新規入室不可), ended=全員退室指示済"
+              },
+              "decks": {
+                "type": "object",
+                "description": "ホストが初期化時にシャッフルし、永続化した4つの山札（カードIDの配列）",
+                "properties": {
+                  "small_deal": { "type": "array", "items": { "type": "number" } },
+                  "big_deal": { "type": "array", "items": { "type": "number" } },
+                  "market": { "type": "array", "items": { "type": "number" } },
+                  "doodad": { "type": "array", "items": { "type": "number" } }
+                },
+                "required": ["small_deal", "big_deal", "market", "doodad"]
+              },
+              "graveyard": {
+                "type": "object",
+                "description": "再シャッフル時に使用する、各デッキの引ききった使用済みカードIDの記録用配列",
+                "properties": {
+                  "small_deal": { "type": "array", "items": { "type": "number" } },
+                  "big_deal": { "type": "array", "items": { "type": "number" } },
+                  "market": { "type": "array", "items": { "type": "number" } },
+                  "doodad": { "type": "array", "items": { "type": "number" } }
+                },
+                "required": ["small_deal", "big_deal", "market", "doodad"]
+              },
               "current_card": {
                 "type": ["object", "null"],
-                "description": "現在引かれているカードのインスタンス情報",
+                "description": "現在場にドローされて全員の画面に同期表示されているアクティブなカード情報",
                 "properties": {
                   "status": { "type": "string", "enum": ["active", "completed"] },
                   "owner_user_id": { "type": "string" },
-                  "card_id": { "type": "number", "description": "マスターデータのID参照" },
+                  "card_id": { "type": "number" },
                   "deck_type": { "type": "string", "enum": ["small_deal", "big_deal", "market", "doodad"] },
                   "title": { "type": "string" },
                   "description": { "type": "string" },
@@ -102,13 +131,16 @@
                 },
                 "required": ["status", "card_id", "deck_type", "title"]
               }
-            }
+            },
+            "required": ["status"]
           }
-        }
+        },
+        "required": ["id", "game_state"]
       }
     },
     "participants": {
       "type": "array",
+      "description": "Supabase上のparticipantsテーブルのレコード配列",
       "items": {
         "type": "object",
         "properties": {
@@ -119,12 +151,12 @@
             "type": "object",
             "properties": {
               "name": { "type": "string" },
-              "role": { "type": "string", "enum": ["一般", "ホスト"] },
+              "role": { "type": "string", "enum": ["general", "host"], "description": "コード側実装(general)とスキーマ記述の完全統合" },
               "profession": { "type": "string" },
               "track": { "type": "string", "enum": ["rat_race", "fast_track"] },
               "position": { "type": "number", "minimum": 0, "maximum": 23 },
               "last_dice": { "type": "number", "minimum": 0, "maximum": 6 },
-              "is_calculating": { "type": "boolean" },
+              "is_calculating": { "type": "boolean", "description": "財務計算のための入力ロック状態フラグ" },
               "calculation_phase": { "type": "string", "enum": ["income_tax", "payday", "deal", "none"] },
               "children_count": { "type": "number", "minimum": 0, "maximum": 3 },
               "charity_turns_left": { "type": "number", "minimum": 0 },
@@ -133,16 +165,59 @@
                 "type": "object",
                 "properties": {
                   "cash": { "type": "number" },
-                  "cashflow": { "type": "number" },
-                  "income": { "type": "object", "properties": { "salary": { "type": "number" }, "passive": { "type": "number" }, "total": { "type": "number" } } },
-                  "expenses": { "type": "object", "properties": { "taxes": { "type": "number" }, "mortgage_payment": { "type": "number" }, "car_loan_payment": { "type": "number" }, "other": { "type": "number" }, "total": { "type": "number" } } },
-                  "assets": { "type": "object", "properties": { "stocks": { "type": "object" }, "real_estate": { "type": "object" } } },
-                  "liabilities": { "type": "object", "properties": { "mortgage": { "type": "number" }, "car_loan": { "type": "number" }, "retail_debt": { "type": "number" } } }
-                }
+                  "cashflow": { "type": "number", "description": "毎月のキャッシュフロー純額(総収入 - 総支出)" },
+                  "income": { 
+                    "type": "object", 
+                    "properties": { 
+                      "salary": { "type": "number" }, 
+                      "passive": { "type": "number" }, 
+                      "total": { "type": "number" } 
+                    },
+                    "required": ["salary", "passive", "total"]
+                  },
+                  "expenses": { 
+                    "type": "object", 
+                    "properties": { 
+                      "taxes": { "type": "number" }, 
+                      "mortgage_payment": { "type": "number" }, 
+                      "car_loan_payment": { "type": "number" }, 
+                      "child_expense": { "type": "number", "description": "子供の数 * 職業別子供コストの合計" },
+                      "other": { "type": "number" }, 
+                      "total": { "type": "number" } 
+                    },
+                    "required": ["taxes", "total"]
+                  },
+                  "assets": { 
+                    "type": "object", 
+                    "properties": { 
+                      "stocks": { 
+                        "type": "object",
+                        "description": "保有株式オブジェクトマップ。キーを銘柄名(symbol)とし、{ count: 数量, average_price: 平均単価 } を格納"
+                      }, 
+                      "real_estate": { 
+                        "type": "array",
+                        "description": "保有している不動産・ビジネスオブジェクトの配列。個別売却トリガー対応。"
+                      } 
+                    },
+                    "required": ["stocks", "real_estate"]
+                  },
+                  "liabilities": { 
+                    "type": "object", 
+                    "properties": { 
+                      "mortgage": { "type": "number" }, 
+                      "car_loan": { "type": "number" }, 
+                      "retail_debt": { "type": "number" } 
+                    },
+                    "required": ["mortgage", "car_loan", "retail_debt"]
+                  }
+                },
+                "required": ["cash", "cashflow", "income", "expenses", "assets", "liabilities"]
               }
-            }
+            },
+            "required": ["name", "role", "profession", "track", "position", "last_dice", "is_calculating", "financials"]
           }
-        }
+        },
+        "required": ["room_id", "user_id", "state"]
       }
     }
   },
