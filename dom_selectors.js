@@ -36,14 +36,21 @@ export const DOM_SELECTORS = {
             STATUS_AREA: 'dice-status-area',
             DICE_RESULT: 'guest-dice-result',
             BTN_ROLL_DICE: 'btn-roll-dice',
-            // --- 公式準拠：Paycheck手動請求用のIDを追加 ---
+            // --- 公式準拠：手動アクション・脱出申請ボタン ---
             BTN_CLAIM_PAYCHECK: 'btn-claim-paycheck', // Paycheckを請求するボタン
-            BTN_END_TURN: 'btn-end-turn'              // 手番を終了するボタン
+            BTN_END_TURN: 'btn-end-turn',             // 手番を終了するボタン
+            BTN_ESCAPE_RAT_CASE: 'btn-escape-rat-race' // 🌟 ラットレース脱出を申請するボタン（新規統合）
         },
 
         // カードドロー・取引エリア
         CARD: {
-            CONTAINER: 'card-display-container'
+            CONTAINER: 'card-display-container',
+            OPTIONS_CONTAINER: 'card-action-options',   // 🌟 カードアクション選択肢の親フィールドID
+            BTN_BUY_REALESTATE: 'btn-card-buy-realestate', // 🌟 不動産/ビジネス購入ボタン
+            BTN_BUY_STOCK: 'btn-card-buy-stock',           // 🌟 株式/ファンド購入ボタン
+            BTN_SELL_STOCK: 'btn-card-sell-stock',         // 🌟 株式市場売却ボタン
+            BTN_PAY_DOODAD: 'btn-card-pay-doodad',         // 🌟 無駄遣い費用支払ボタン
+            BTN_PASS: 'btn-card-pass'                      // 🌟 カードアクションパスボタン
         },
 
         // 財務諸表（PL/BS）手動計算エリア
@@ -66,7 +73,13 @@ export const DOM_SELECTORS = {
             REAL_ESTATE: 'display-portfolio-realestate',
             LIABILITY_MORTGAGE: 'display-liability-mortgage',
             LIABILITY_CAR_LOAN: 'display-liability-carloan',
-            LIABILITY_RETAIL: 'display-liability-retail'
+            LIABILITY_RETAIL: 'display-liability-retail',
+            // --- 🌟 手動借入銀行ローン用コントロール＆表示項目 ---
+            LOAN_CONTROL_CONTAINER: 'bank-loan-control',  // 🌟 銀行ローン操作パネルID
+            BTN_BORROW_LOAN: 'btn-borrow-loan',           // 🌟 銀行ローンを借り入れるボタン
+            BTN_PAYBACK_LOAN: 'btn-payback-loan',         // 🌟 銀行ローンを返済するボタン
+            DISPLAY_LIABILITY_BANKLOAN: 'display-liability-bankloan',   // 🌟 銀行ローン残高表示用
+            DISPLAY_EXPENSE_LOANINTEREST: 'display-expense-loaninterest' // 🌟 ローン利息支出表示用
         },
 
         // ゲスト用すごろく盤面モニターID生成用のプレフィックス
@@ -82,16 +95,16 @@ export const DOM_SELECTORS = {
     HOST: {
         SECTION: 'section-host',
         
-        // 🌟【新設】部屋ステータス管理・ライフサイクル制御エリア
+        // 🌟部屋ステータス管理・ライフサイクル制御エリア
         LIFECYCLE: {
             DISPLAY_ROOM_STATUS: 'host-room-status',              // 現在の部屋ステータス表示用
             BTN_INITIAL_SHUFFLE: 'btn-initial-shuffle-start',     // 初期シャッフル＆ゲーム開始ボタン
-            BTN_MANUAL_RESHUFFLE: 'btn-manual-reshuffle',         // 山札再シャッフルボタン
-            BTN_FORCE_GAME_END: 'btn-force-game-end',             // 全員強制退室＆ゲーム終了ボタン
+            BTN_MANUAL_RESHUFFLE: 'btn-manual-reshuffle',          // 山札再シャッフルボタン
+            BTN_FORCE_GAME_END: 'btn-force-game-end',              // 全員強制退室＆ゲーム終了ボタン
             BTN_INITIALIZE_ROOM: 'btn-initialize-room'            // 部屋を初期化するボタン
         },
 
-        // 🌟【新設】4種類の山札および使用済みカードの残り枚数監視モニター
+        // 🌟4種類の山札および使用済みカードの残り枚数監視モニター
         DECK_MONITOR: {
             SMALL_DEAL_COUNT: 'deck-count-small-deal',
             BIG_DEAL_COUNT: 'deck-count-big-deal',
