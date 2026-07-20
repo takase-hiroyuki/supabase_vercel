@@ -2,13 +2,14 @@
 
 // ⭕️ 正しいファイル名「dom_selectors.js」からインポート
 import { DOM_SELECTORS } from './dom_selectors.js';
+import { guestState } from './guest_state.js'; // 🌟 手番判定用にインポート
 
 /**
  * 共通の部屋データから、現在引き出されて共有されているカード情報を描画し、
  * 静的に常設されたカードアクションボタンのdisabled状態を制御する関数
  * @param {object} currentCard - rooms.game_state.current_card のデータ
  * @param {string} myUserId - ゲスト自身のユーザーID
- * @param {function} onCardAction - ボタン押下時のイベント仲介（※現在は親で一括登録するためデバッグログ等で利用可能）
+ * @param {function} onCardAction - ボタン押下時のイベント仲介
  */
 export function renderCurrentCard(currentCard, myUserId, onCardAction) {
     const SEL_C = DOM_SELECTORS.GUEST.CARD;
@@ -42,28 +43,23 @@ export function renderCurrentCard(currentCard, myUserId, onCardAction) {
     if (container) {
         const textElement = container.querySelector("p");
         if (textElement) {
-            textElement.textContent = `【${currentCard.title || '無題のカード'}】(種類: ${currentCard.deck_type}) 
-            総額: $${currentCard.cost ?? 0} | 頭金: $${currentCard.down_payment ?? 0} | ローン残高: $${currentCard.mortgage ?? 0} | 増加不労所得: +$${currentCard.passive_income ?? 0}`;
+            // 🌟 type キーに対応、および description (説明文) を表示に含めるように修正
+            textElement.textContent = `【${currentCard.title || '無題のカード'}】(種類: ${currentCard.type})\n${currentCard.description || ''}`;
         }
     }
 
     // 3. 自分自身にこのカードに対する選択権・所有権があるかを判定
-    const isMyCardTurn = (currentCard.owner_user_id === myUserId);
-    const deckType = currentCard.deck_type; // 'small_deal', 'big_deal', 'market', 'doodad' など
+    // 🌟 現在の手番ユーザー ＝ このカードを処理する権利を持つユーザーとして判定
+    const isMyCardTurn = guestState.isMyTurn(); 
+    const deckType = currentCard.type; // 🌟 'small_deal', 'big_deal', 'market', 'doodad' 
 
     // 4. 教育的 disabled 制御：カードの種類に応じて、選択可能なオプションのみを解放
     if (isMyCardTurn) {
         // 不動産・ビジネスカード (Small/Big Deal の一部)
-        if (deckType === 'big_deal' || (deckType === 'small_deal' && (currentCard.passive_income > 0 || currentCard.mortgage > 0))) {
+        // ※現状は仮判定として、引いたカードのマスターデータ(cost等)がないため、一旦Deal系は購入を有効化
+        if (deckType === 'big_deal' || deckType === 'small_deal') {
             if (btnBuyRealEstate) btnBuyRealEstate.disabled = false;
-            if (btnBuyStock) btnBuyStock.disabled = true;
-            if (btnSellStock) btnSellStock.disabled = true;
-            if (btnPayDoodad) btnPayDoodad.disabled = true;
-        } 
-        // 株式・ファンドカード (Small Deal の一部)
-        else if (deckType === 'small_deal' && currentCard.passive_income === 0 && currentCard.mortgage === 0) {
-            if (btnBuyRealEstate) btnBuyRealEstate.disabled = true;
-            if (btnBuyStock) btnBuyStock.disabled = false;
+            if (btnBuyStock) btnBuyStock.disabled = false; // 株か不動産かは未確定なため両方解放
             if (btnSellStock) btnSellStock.disabled = true;
             if (btnPayDoodad) btnPayDoodad.disabled = true;
         } 
