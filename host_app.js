@@ -2,9 +2,13 @@
 
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
-// 【修正】コメントを実態（insertParticipant）に合わせて整理しました
-import { subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
+// 【修正】コメントを実態（insertParticipant）に合わせて整理しました。supabaseクライアント自体もインポートに追加。
+import { supabase, subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
 import { renderTurnDisplay, renderParticipantDisplay } from './host_disp.js'; // 表示用ファイルをインポート
+
+// ====== 新規追加：ホスト用ID ======
+const HOST_USER_ID = 'host-admin-01';
+// ===================================
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
 const listBody = document.getElementById('host-participant-list');
@@ -14,6 +18,9 @@ const hostDiceMonitor = document.getElementById('host-dice-monitor');
 // 手番設定用の入力欄（入室順）とボタン
 const inputNextTurnOrder = document.getElementById('input-next-turn-order');
 const btnSetTurn = document.getElementById('btn-set-turn');
+
+// 「🎲 初期シャッフル＆ゲーム開始」ボタン
+const btnInitialShuffleStart = document.getElementById('btn-initial-shuffle-start');
 
 // キャッシュ用の変数
 let latestParticipants = [];
@@ -34,6 +41,44 @@ const updateParticipantTable = (participants) => {
     // 参加者情報が更新されたら手番表示も再計算する
     updateTurnDisplay();
 };
+
+// ====== 新規追加：初期シャッフル＆ゲーム開始 ======
+if (btnInitialShuffleStart) {
+    btnInitialShuffleStart.addEventListener('click', async () => {
+        if (!confirm("初期シャッフルを行ってゲームを開始しますか？")) return;
+
+        try {
+            btnInitialShuffleStart.disabled = true;
+            btnInitialShuffleStart.textContent = '処理中...';
+
+            // データベースの start_game_with_shuffled_decks 関数を呼び出す
+            const { data, error } = await supabase.rpc('start_game_with_shuffled_decks', {
+                p_room_id: roomId,
+                p_host_user_id: HOST_USER_ID
+            });
+
+            if (error) {
+                console.error("RPC呼び出しエラー:", error);
+                alert("通信エラーが発生しました: " + error.message);
+                return;
+            }
+
+            if (data.success) {
+                alert(data.message);
+                // 成功時は、roomsテーブルの更新を検知して画面が切り替わる仕組み（後続実装）を待つ
+            } else {
+                alert("エラー: " + data.error);
+            }
+        } catch (err) {
+            console.error("予期せぬエラー:", err);
+            alert("エラーが発生しました。コンソールを確認してください。");
+        } finally {
+            btnInitialShuffleStart.disabled = false;
+            btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
+        }
+    });
+}
+// ===============================================
 
 // 3.「を手番にする」ボタンが押された時の動き（配列インデックスから特定）
 if (btnSetTurn) {
