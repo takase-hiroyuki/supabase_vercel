@@ -7,11 +7,11 @@ import { getFromStorage } from './storage.js';
 import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from './supabase.js';
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { refreshGuestUI } from './guest_disp.js';
-import { DOM_SELECTORS } from './selectors.js'; // 🌟ID管理ファイルをインポート
+import { DOM_SELECTORS } from './dom_selectors.js'; // ⭕️ 実際のファイル名「dom_selectors.js」へ修正完了
 
 // 分割したカスタムモジュールから状態とアクションをインポート
 import { guestState } from './guest_state.js';
-// 🌟追加アクションハンドラー（脱出申請、カード、ローン）をインポート想定に追記
+// 追加アクションハンドラー（脱出申請、カード、ローン）をインポート
 import { 
     handleRollDice, 
     handleClaimPaycheck, 
@@ -35,7 +35,7 @@ const btnClaimPaycheck = document.getElementById(SEL_G.CONTROLS.BTN_CLAIM_PAYCHE
 const btnEndTurn = document.getElementById(SEL_G.CONTROLS.BTN_END_TURN);
 
 // 🌟新常設コントロールボタン群の取得
-const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_CASE);
+const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_RACE); // ⭕️ 定数定義に合わせ「RACE」へ修正完了
 const btnBuyRealEstate = document.getElementById(SEL_G.CARD.BTN_BUY_REALESTATE);
 const btnBuyStock = document.getElementById(SEL_G.CARD.BTN_BUY_STOCK);
 const btnSellStock = document.getElementById(SEL_G.CARD.BTN_SELL_STOCK);
@@ -76,7 +76,6 @@ function updateStatusProfessionUI(state) {
     const existingPlayer = await autoLoginCheck();
 
     if (existingPlayer) {
-        // 🌟方針統一：style.display ではなく hidden 属性の切り替えで制御
         sectionLogin.hidden = true;
         sectionGuest.hidden = false;
         
@@ -101,7 +100,6 @@ btnLogin.addEventListener('click', async () => {
         btnLogin.textContent = '入室処理中...';
         const userId = await executeJoin(username);
         
-        // 🌟hidden 制御
         sectionLogin.hidden = true;
         sectionGuest.hidden = false;
         
@@ -152,14 +150,11 @@ function startMonitoring(myUserId) {
             btnRollDice.disabled = true;
         }
 
-        // 🌟 補足：新設した取引ボタンやローンボタン、脱出申請ボタン自体の disabled 活性制御は、
-        // 状態を集中管理する `refreshGuestUI` 内部にすべての状態を引数として引き渡し、
-        // そこで一括集約して ON/OFF の判断・制御を行うようにバインドします。
+        // 🌟 取引・ローン・脱出申請ボタン等のdisabled制御を表示モジュール側へ一括集約
         refreshGuestUI(
             guestState.latestParticipants,
             guestState.currentTurnUserIdCache,
-            guestState.myUserId,
-            guestState.myUserId,
+            guestState.myUserId, // ⭕️ 第3引数と第4引数の重複バグを解消
             isFinancialsLocked,
             currentRoomCard,
             {
@@ -181,7 +176,7 @@ function startMonitoring(myUserId) {
         );
     };
 
-    // --- イベントハンドラーの紐付け（進行・財務ロジックはすべてモジュールへ委譲） ---
+    // --- イベントハンドラーの紐付け ---
     
     // サイコロを振る
     btnRollDice.addEventListener('click', () => {
@@ -198,19 +193,19 @@ function startMonitoring(myUserId) {
         handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResult);
     });
 
-    // 🌟 新設: ラットレース脱出申請
+    // ラットレース脱出申請
     btnEscapeRatRace.addEventListener('click', () => {
         handleEscapeRatRace(btnEscapeRatRace);
     });
 
-    // 🌟 新設: カード意思決定アクションボタン群（まとめて共通のアクションハンドラーにドロップタイプを通知）
+    // カード意思決定アクションボタン群
     btnBuyRealEstate.addEventListener('click', () => handleCardAction('buy_real_estate'));
     btnBuyStock.addEventListener('click', () => handleCardAction('buy_stock'));
     btnSellStock.addEventListener('click', () => handleCardAction('sell_asset'));
     btnPayDoodad.addEventListener('click', () => handleCardAction('pay_doodad'));
     btnCardPass.addEventListener('click', () => handleCardAction('pass'));
 
-    // 🌟 新設: 銀行ローン借入・返済アクション
+    // 銀行ローン借入・返済アクション
     btnBorrowLoan.addEventListener('click', () => handleBankLoanAction('borrow'));
     btnPaybackLoan.addEventListener('click', () => handleBankLoanAction('payback'));
 
