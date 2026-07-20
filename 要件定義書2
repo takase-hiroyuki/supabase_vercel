@@ -25,8 +25,9 @@
       ],
       "3_1_2_join_process": [
         "入室時にUUIDv4の生成と localStorage への保存を行う。",
+        "部屋の状態（rooms.game_state.status）が 'waiting' の場合のみ入室を許可し、'playing' または 'ended' の場合は新規入室をロックする。",
         "職業（profession）および初期財務データは jobs.js（schema.json）に基づき生成し、state JSONB に永続化する。この時、永続化されるデータは『固定のキャラクター情報（profession）』と『システム進行状態（role）』に分離して独立制御する。",
-        "最初に入室したユーザーに初期手番を割り当てる。"
+        "最初に入室したユーザーに初期手番の候補（現在の順番が未定時の初期マーカー）を割り当てる。"
       ],
       "3_1_2_x_player_role_and_profession_definitions": {
         "description": "UIコンポーネントにおけるシステム役割（Role）とキャラクター固有データ（Profession）の分離要件。",
@@ -92,13 +93,54 @@
         "全員退室による物理削除、および個別キックによる対象レコード削除と手番情報の再割り当て。"
       ],
       "3_2_3_card_management": [
-        "rooms.game_state によるカード情報の単一管理とクライアントへの同期。"
-      ]
+        "rooms.game_state 内の current_card によるカード情報の単一管理と全クライアントへの動的リアルタイム同期。"
+      ],
+      "3_2_4_room_lifecycle_control_ui": {
+        "description": "部屋のゲームステータス（waiting, playing, ended）に応じたホスト専用ボタン群の制御要件",
+        "buttons": {
+          "initial_shuffle_and_start": {
+            "label": "初期シャッフル＆ゲーム開始",
+            "active_condition": "rooms.game_state.status == 'waiting'",
+            "process": "4種類のカードデータ配列（small_deal, big_deal, market, doodad）を個別にランダムシャッフルし、rooms.game_state.decks に一括永続化。status を 'playing' へ変更し、最初のプレイヤーに手番を割り当ててゲームを開始する。"
+          },
+          "manual_reshuffle": {
+            "label": "山札再シャッフル",
+            "active_condition": "rooms.game_state.status == 'playing'",
+            "process": "特定の山札（decks）の残り配列要素数が 0 になった際、またはホストが任意で実行した際、対応する使用済みカード履歴（graveyard）のID群を回収・再度ランダムシャッフルして対象の decks へ書き戻す。"
+          },
+          "force_game_end": {
+            "label": "全員強制退室＆ゲーム終了",
+            "active_condition": "rooms.game_state.status == 'playing'",
+            "process": "status を 'ended' へ変更。participants テーブルから該当 room_id の全レコードを物理削除（キックトリガー発行）し、全子画面の操作をロックさせて自動退室を促す。"
+          },
+          "initialize_room": {
+            "label": "部屋を初期化する",
+            "active_condition": "rooms.game_state.status == 'ended'",
+            "process": "status を 'waiting' に戻し、decks, graveyard, current_card, current_turn_user_id を全て null または空オブジェクトに初期化。新規プレイヤーの入室受付可能状態を再構築する。"
+          }
+        }
+      }
     }
   },
   "4_database_schema": {
     "4_1_rooms_table": {
-      "columns": ["id", "created_at", "current_turn_user_id", "game_state"]
+      "columns": ["id", "created_at", "current_turn_user_id", "game_state"],
+      "game_state_json_structure": {
+        "status": "waiting | playing | ended",
+        "decks": {
+          "small_deal": "Array(Number) - カードID配列",
+          "big_deal": "Array(Number) - カードID配列",
+          "market": "Array(Number) - カードID配列",
+          "doodad": "Array(Number) - カードID配列"
+        },
+        "graveyard": {
+          "small_deal": "Array(Number) - 使用済みカードID配列",
+          "big_deal": "Array(Number) - 使用済みカードID配列",
+          "market": "Array(Number) - 使用済みカードID配列",
+          "doodad": "Array(Number) - 使用済みカードID配列"
+        },
+        "current_card": "Object | null"
+      }
     },
     "4_2_participants_table": {
       "columns": ["id", "room_id", "user_id", "created_at", "state"]
@@ -121,15 +163,15 @@
       "handlers": {
         "doodad_handler": {
           "trigger": "deck_type == 'doodad'",
-          "process": "action_rule.is_loan を評価。falseの場合はcashからamountを減算。trueの場合はliabilitiesにamountを加算し、expensesにmonthly_paymentを加算する。"
+          "process": "action_rule.is_loan を評価。falseの場合はcashからamountを減算。trueの場合はliabilitiesにamountを加算し、expensesにmonthly_paymentを加算する。使用したカードIDは rooms.game_state.graveyard.doodad へアトミックにプッシュする。"
         },
         "market_handler": {
           "trigger": "deck_type == 'market'",
-          "process": "プレイヤーが条件に合致する symbol の資産を保有しているかチェック。保有している場合、action_rule.price を評価。number型ならその額を提示し、string型（例 'Cost*3'）なら対象資産のcostに乗数を掛けて売却額を動的算出する。"
+          "process": "プレイヤーが条件に合致する symbol の資産を保有しているかチェック。保有している場合、action_rule.price を評価。number型ならその額を提示し、string型（例 'Cost*3'）なら対象資産のcostに乗数を掛けて売却額を動的算出する。解決後、カードIDを graveyard.market へプッシュする。"
         },
         "stock_event_handler": {
           "trigger": "action_rule.type が 'stock_split' または 'stock_reverse_split'",
-          "process": "全プレイヤーの保有資産を走査し、action_rule.target_symbol に一致する株数を action_rule.multiplier に基づき一斉に書き換える。"
+          "process": "全プレイヤーの保有資産を走査し、action_rule.target_symbol に一致する株数を action_rule.multiplier に基づき一斉に書き換える。解決後、カードIDを graveyard.small_deal へプッシュする。"
         }
       }
     }
