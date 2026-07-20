@@ -12,6 +12,7 @@ import {
 import { 
     getCurrentTurn, 
     updateCurrentTurn, 
+    updateRoomGameState, // ⭕️ 共通カード状態パッチ用関数をインポート
     clearRoomParticipants, 
     subscribeToRoom 
 } from './supabase_game.js';
@@ -33,6 +34,7 @@ export {
     subscribeToParticipants,
     getCurrentTurn,
     updateCurrentTurn,
+    updateRoomGameState, // ⭕️ 外部アクションモジュールから使えるようにエクスポート
     clearRoomParticipants,
     subscribeToRoom
 };
