@@ -38,8 +38,8 @@ export const DOM_SELECTORS = {
             BTN_ROLL_DICE: 'btn-roll-dice',
             // --- 公式準拠：手動アクション・脱出申請ボタン ---
             BTN_CLAIM_PAYCHECK: 'btn-claim-paycheck', // Paycheckを請求するボタン
-            BTN_END_TURN: 'btn-end-turn',             // 手番を終了するボタン
-            BTN_ESCAPE_RAT_CASE: 'btn-escape-rat-race' // 🌟 ラットレース脱出を申請するボタン（新規統合）
+            BTN_END_TURN: 'btn-end-turn',              // 手番を終了するボタン
+            BTN_ESCAPE_RAT_RACE: 'btn-escape-rat-race' // 🌟 タイポを修正：ラットレース脱出を申請するボタン
         },
 
         // カードドロー・取引エリア
