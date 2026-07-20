@@ -48,6 +48,7 @@ if (btnInitialShuffleStart) {
         if (!confirm("初期シャッフルを行ってゲームを開始しますか？")) return;
 
         try {
+            // 一旦ボタンを無効化
             btnInitialShuffleStart.disabled = true;
             btnInitialShuffleStart.textContent = '処理中...';
 
@@ -58,21 +59,23 @@ if (btnInitialShuffleStart) {
             });
 
             if (error) {
-                console.error("RPC呼び出しエラー:", error);
-                alert("通信エラーが発生しました: " + error.message);
-                return;
+                throw error; // 下のcatchブロックへ処理を移す
             }
 
             if (data.success) {
                 alert(data.message);
-                // 成功時は、roomsテーブルの更新を検知して画面が切り替わる仕組み（後続実装）を待つ
+                // 【変更】成功時はボタンを無効化したままにし、文字を変える
+                btnInitialShuffleStart.textContent = 'ゲーム開始済み';
             } else {
                 alert("エラー: " + data.error);
+                // エラー時はボタンを元に戻す
+                btnInitialShuffleStart.disabled = false;
+                btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
             }
         } catch (err) {
-            console.error("予期せぬエラー:", err);
-            alert("エラーが発生しました。コンソールを確認してください。");
-        } finally {
+            console.error("エラー:", err);
+            alert("エラーが発生しました。通信状態を確認してください。");
+            // エラー時はボタンを元に戻す
             btnInitialShuffleStart.disabled = false;
             btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
         }
