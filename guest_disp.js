@@ -114,6 +114,25 @@ export function refreshGuestUI(
             const canEscape = isMyTurn && !isFinancialsLocked && (passiveIncome > totalExpenses);
             btnEscape.disabled = !canEscape;
         }
+
+        // 🌟 ⑥ 新設: Opportunityマスでの「Small / Big Deal」ドローボタンの活性制御
+        const btnDrawSmall = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_SMALL_DEAL);
+        const btnDrawBig = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_BIG_DEAL);
+        
+        if (btnDrawSmall && btnDrawBig) {
+            // サイコロの出目(last_dice)が振られており、未請求の給料がなく、現在Opportunityマス(2, 4, 6, 8, 10, 13, 15, 17, 19, 21, 23)にいる場合
+            const currentPosition = myData.state.position ?? 0;
+            const lastDice = myData.state.last_dice ?? 0;
+            const OPPORTUNITY_CELLS = [2, 4, 6, 8, 10, 13, 15, 17, 19, 21, 23];
+            
+            const isOpportunityCell = OPPORTUNITY_CELLS.includes(currentPosition);
+            
+            // 手番中 && サイコロを振った後 && 未請求給料なし && Opportunityマス && まだ場にカードが出ていない
+            const canDrawDeal = isMyTurn && lastDice > 0 && pendingSalary === 0 && isOpportunityCell && (!currentRoomCard || currentRoomCard.status === 'completed');
+
+            btnDrawSmall.disabled = !canDrawDeal;
+            btnDrawBig.disabled = !canDrawDeal;
+        }
     }
     // ==========================================
 
