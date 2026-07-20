@@ -47,6 +47,9 @@ export const DOM_SELECTORS = {
         // カードドロー・取引エリア
         CARD: {
             CONTAINER: 'card-display-container',
+            DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   // 🌟 追加: 山札選択用フィールドID
+            BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    // 🌟 追加: Small Dealドローボタン
+            BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        // 🌟 追加: Big Dealドローボタン
             OPTIONS_CONTAINER: 'card-action-options',   // 🌟 カードアクション選択肢の親フィールドID
             BTN_BUY_REALESTATE: 'btn-card-buy-realestate', // 🌟 不動産/ビジネス購入ボタン
             BTN_BUY_STOCK: 'btn-card-buy-stock',           // 🌟 株式/ファンド購入ボタン
@@ -78,8 +81,8 @@ export const DOM_SELECTORS = {
             LIABILITY_RETAIL: 'display-liability-retail',
             // --- 🌟 手動借入銀行ローン用コントロール＆表示項目 ---
             LOAN_CONTROL_CONTAINER: 'bank-loan-control',  // 🌟 銀行ローン操作パネルID
-            BTN_BORROW_LOAN: 'btn-borrow-loan',           // 🌟 銀行ローンを借り入れるボタン
-            BTN_PAYBACK_LOAN: 'btn-payback-loan',         // 🌟 銀行ローンを返済するボタン
+            BTN_BORROW_LOAN: 'btn-borrow-loan',            // 🌟 銀行ローンを借り入れるボタン
+            BTN_PAYBACK_LOAN: 'btn-payback-loan',          // 🌟 銀行ローンを返済するボタン
             DISPLAY_LIABILITY_BANKLOAN: 'display-liability-bankloan',   // 🌟 銀行ローン残高表示用
             DISPLAY_EXPENSE_LOANINTEREST: 'display-expense-loaninterest' // 🌟 ローン利息支出表示用
         },
@@ -110,7 +113,7 @@ export const DOM_SELECTORS = {
         DECK_MONITOR: {
             SMALL_DEAL_COUNT: 'deck-count-small-deal',
             BIG_DEAL_COUNT: 'deck-count-big-deal',
-            MARKET_COUNT: 'deck-count-market',
+            MARK_COUNT: 'deck-count-market',
             DOODAD_COUNT: 'deck-count-doodad'
         },
 
