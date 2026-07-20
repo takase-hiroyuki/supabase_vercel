@@ -1,6 +1,7 @@
 // guest_disp_controls.js
 
-import { DOM_SELECTORS } from './selectors.js';
+// ⭕️ 正しいファイル名「dom_selectors.js」からインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
 
 /**
  * 手番および計算検証状態に応じた各種操作ボタンの活性・非活性を制御する関数
@@ -53,7 +54,7 @@ export function updateGameControls(currentTurnUserId, myUserId, turnUserName, is
         } 
         else {
             // 【プリロール状態】自分の手番で、まだサイコロを振っていない状態
-            diceStatusArea.textContent = "あなたの手番です。サイコロを振って移動してください。";
+            diceStatusArea.textContent = "あなたの手番です。サイコロを振して移動してください。";
             
             rollDiceBtn.disabled = false;
             btnClaimPaycheck.disabled = true; // サイコロを振る前にPaycheckは請求できない
