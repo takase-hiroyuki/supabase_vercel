@@ -61,8 +61,9 @@
         <!-- カードドロー・取引エリア -->
         <div id="card-display-container">
             <fieldset>
-                <legend>ドローカード状況</legend>
-                <p>現在場に出ているカードはありません。</p>
+                <!-- 🌟 id="display-card-legend" を追加 -->
+                <legend id="display-card-legend">ドローカード状況</legend>
+                <p id="card-status-message">現在場に出ているカードはありません。</p>
                 
                 <fieldset id="deck-draw-options">
                     <legend>山札からカードを引く</legend>
