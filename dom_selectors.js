@@ -48,6 +48,11 @@ export const DOM_SELECTORS = {
         CARD: {
             CONTAINER: 'card-display-container',
             LEGEND: 'display-card-legend',                 // 🌟 追加: 誰が引いたカードかわかるようにする用
+            STATUS_MESSAGE: 'card-status-message',         // 🌟 追加: カードのテキスト説明用
+            NUMERICAL_DETAILS_CONTAINER: 'card-numerical-details', // 🌟 追加: 数値表示エリアのコンテナ
+            DETAIL_COST: 'card-detail-cost',               // 🌟 追加: 価格表示用
+            DETAIL_DOWNPAYMENT: 'card-detail-downpayment', // 🌟 追加: 頭金表示用
+            DETAIL_CASHFLOW: 'card-detail-cashflow',       // 🌟 追加: キャッシュフロー表示用
             DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   // 🌟 追加: 山札選択用フィールドID
             BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    // 🌟 追加: Small Dealドローボタン
             BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        // 🌟 追加: Big Dealドローボタン
