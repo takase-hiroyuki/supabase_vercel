@@ -338,6 +338,14 @@ export async function handleCardAction(actionType) {
     try {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
+        // 🌟 修正: パスした場合、財務の変動はないため強制的に計算ロックを解除する
+        if (actionType === 'pass') {
+            await updateParticipantState(guestState.myUserId, { 
+                is_calculating: false,
+                calculation_phase: null
+            });
+        }
+
         const updatedGameState = {
             current_card: {
                 ...currentCard,
