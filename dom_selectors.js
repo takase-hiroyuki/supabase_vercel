@@ -50,6 +50,8 @@ export const DOM_SELECTORS = {
             DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   // 🌟 追加: 山札選択用フィールドID
             BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    // 🌟 追加: Small Dealドローボタン
             BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        // 🌟 追加: Big Dealドローボタン
+            BTN_DRAW_MARKET: 'btn-draw-market',            // 🌟 追加: Marketドローボタン
+            BTN_DRAW_DOODAD: 'btn-draw-doodad',            // 🌟 追加: Doodadドローボタン
             OPTIONS_CONTAINER: 'card-action-options',   // 🌟 カードアクション選択肢の親フィールドID
             BTN_BUY_REALESTATE: 'btn-card-buy-realestate', // 🌟 不動産/ビジネス購入ボタン
             BTN_BUY_STOCK: 'btn-card-buy-stock',           // 🌟 株式/ファンド購入ボタン
