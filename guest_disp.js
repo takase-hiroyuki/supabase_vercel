@@ -115,23 +115,34 @@ export function refreshGuestUI(
             btnEscape.disabled = !canEscape;
         }
 
-        // 🌟 ⑥ 新設: Opportunityマスでの「Small / Big Deal」ドローボタンの活性制御
+        // 🌟 ⑥ 修正: 各マスでのカードドローボタンの活性制御
         const btnDrawSmall = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_SMALL_DEAL);
         const btnDrawBig = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_BIG_DEAL);
+        const btnDrawMarket = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_MARKET);
+        const btnDrawDoodad = document.getElementById(DOM_SELECTORS.GUEST.CARD.BTN_DRAW_DOODAD);
         
-        if (btnDrawSmall && btnDrawBig) {
-            // サイコロの出目(last_dice)が振られており、未請求の給料がなく、現在Opportunityマス(2, 4, 6, 8, 10, 13, 15, 17, 19, 21, 23)にいる場合
+        if (btnDrawSmall && btnDrawBig && btnDrawMarket && btnDrawDoodad) {
             const currentPosition = myData.state.position ?? 0;
             const lastDice = myData.state.last_dice ?? 0;
+            
+            // 各マスの定義
             const OPPORTUNITY_CELLS = [2, 4, 6, 8, 10, 13, 15, 17, 19, 21, 23];
+            const MARKET_CELLS = [12, 22];
+            const DOODAD_CELLS = [1, 7, 14];
             
+            // 現在地がいずれのマスに該当するか判定
             const isOpportunityCell = OPPORTUNITY_CELLS.includes(currentPosition);
+            const isMarketCell = MARKET_CELLS.includes(currentPosition);
+            const isDoodadCell = DOODAD_CELLS.includes(currentPosition);
             
-            // 手番中 && サイコロを振った後 && 未請求給料なし && Opportunityマス && まだ場にカードが出ていない
-            const canDrawDeal = isMyTurn && lastDice > 0 && pendingSalary === 0 && isOpportunityCell && (!currentRoomCard || currentRoomCard.status === 'completed');
+            // ドローアクションが可能な共通条件：自分の手番 && サイコロを振った後 && 未請求給料なし && まだ場にカードが出ていない
+            const canActCard = isMyTurn && lastDice > 0 && pendingSalary === 0 && (!currentRoomCard || currentRoomCard.status === 'completed');
 
-            btnDrawSmall.disabled = !canDrawDeal;
-            btnDrawBig.disabled = !canDrawDeal;
+            // 条件を満たすマスにいる場合のみ、該当するボタンを有効化する
+            btnDrawSmall.disabled = !(canActCard && isOpportunityCell);
+            btnDrawBig.disabled = !(canActCard && isOpportunityCell);
+            btnDrawMarket.disabled = !(canActCard && isMarketCell);
+            btnDrawDoodad.disabled = !(canActCard && isDoodadCell);
         }
     }
     // ==========================================
