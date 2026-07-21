@@ -67,8 +67,10 @@ export const DOM_SELECTORS = {
             CALC_LOCK_STATUS: 'calc-lock-status',
             DISPLAY_SALARY: 'display-salary',
             DISPLAY_PASSIVE_INCOME: 'display-passive-income',
+            DISPLAY_TOTAL_INCOME: 'display-total-income', // 🌟 追加: 総収入の正解表示用
             INPUT_TOTAL_INCOME: 'input-total-income',
             DISPLAY_TOTAL_EXPENSES: 'display-total-expenses',
+            DISPLAY_MONTHLY_CASHFLOW: 'display-monthly-cashflow', // 🌟 追加: 毎月のキャッシュフローの正解表示用
             INPUT_NET_CASHFLOW: 'input-net-cashflow',
             BTN_CHECK_CALCULATIONS: 'btn-check-calculations'
         },
