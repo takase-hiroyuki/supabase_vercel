@@ -47,6 +47,7 @@ export const DOM_SELECTORS = {
         // カードドロー・取引エリア
         CARD: {
             CONTAINER: 'card-display-container',
+            LEGEND: 'display-card-legend',                 // 🌟 追加: 誰が引いたカードかわかるようにする用
             DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   // 🌟 追加: 山札選択用フィールドID
             BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    // 🌟 追加: Small Dealドローボタン
             BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        // 🌟 追加: Big Dealドローボタン
@@ -117,7 +118,7 @@ export const DOM_SELECTORS = {
         DECK_MONITOR: {
             SMALL_DEAL_COUNT: 'deck-count-small-deal',
             BIG_DEAL_COUNT: 'deck-count-big-deal',
-            MARKET_COUNT: 'deck-count-market', // 🌟 MARK_COUNT から MARKET_COUNT に修正
+            MARKET_COUNT: 'deck-count-market',
             DOODAD_COUNT: 'deck-count-doodad'
         },
 
