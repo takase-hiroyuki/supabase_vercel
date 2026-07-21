@@ -113,7 +113,7 @@ export const DOM_SELECTORS = {
         DECK_MONITOR: {
             SMALL_DEAL_COUNT: 'deck-count-small-deal',
             BIG_DEAL_COUNT: 'deck-count-big-deal',
-            MARK_COUNT: 'deck-count-market',
+            MARKET_COUNT: 'deck-count-market', // 🌟 MARK_COUNT から MARKET_COUNT に修正
             DOODAD_COUNT: 'deck-count-doodad'
         },
 
