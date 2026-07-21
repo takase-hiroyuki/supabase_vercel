@@ -38,6 +38,16 @@ export function refreshGuestUI(
     const turnUser = participants.find(p => p.user_id === currentTurnUserId);
     const turnUserName = turnUser ? turnUser.state.name : null;
 
+    // 🌟 追加: カード枠のタイトルを「〇〇 が引いたカードの内容」に変更
+    const elCardLegend = document.getElementById(DOM_SELECTORS.GUEST.CARD.LEGEND);
+    if (elCardLegend) {
+        if (turnUserName) {
+            elCardLegend.textContent = `${turnUserName} が引いたカードの内容`;
+        } else {
+            elCardLegend.textContent = "ドローカード状況";
+        }
+    }
+
     // 🌟【修正：$0問題対策】引数のリストから見つからない、またはデータが空の場合、状態管理側から直接最新データを引っ張る
     let myData = participants.find(p => p.user_id === myUserId);
     if (!myData || !myData.state || !myData.state.financials) {
