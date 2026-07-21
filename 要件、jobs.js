@@ -1,4 +1,4 @@
-// jobs.js
+// jobs.js このファイルは使わない。データベース内ですべて実行する
 
 export const JOBS_LIST = [
   {
