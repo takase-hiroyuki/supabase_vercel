@@ -39,9 +39,12 @@ const btnEndTurn = document.getElementById(SEL_G.CONTROLS.BTN_END_TURN);
 
 // 🌟新常設コントロールボタン群の取得
 const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_RACE);
-// 🌟 追加: 新しく設置した山札ドローボタンの取得
+
+// 🌟 山札ドローボタン4種の取得
 const btnDrawSmallDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_SMALL_DEAL);
 const btnDrawBigDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_BIG_DEAL);
+const btnDrawMarket = document.getElementById(SEL_G.CARD.BTN_DRAW_MARKET); // 🌟 追加
+const btnDrawDoodad = document.getElementById(SEL_G.CARD.BTN_DRAW_DOODAD); // 🌟 追加
 
 const btnBuyRealEstate = document.getElementById(SEL_G.CARD.BTN_BUY_REALESTATE);
 const btnBuyStock = document.getElementById(SEL_G.CARD.BTN_BUY_STOCK);
@@ -205,20 +208,42 @@ function startMonitoring(myUserId) {
         handleEscapeRatRace(btnEscapeRatRace);
     });
 
-    // 🌟 追加: 山札からカードを引くイベント
+    // 🌟 共通：ドローボタンを全て無効化する関数
+    const disableAllDrawButtons = () => {
+        if(btnDrawSmallDeal) btnDrawSmallDeal.disabled = true;
+        if(btnDrawBigDeal) btnDrawBigDeal.disabled = true;
+        if(btnDrawMarket) btnDrawMarket.disabled = true;
+        if(btnDrawDoodad) btnDrawDoodad.disabled = true;
+    };
+
+    // 山札からカードを引くイベント
     if (btnDrawSmallDeal) {
         btnDrawSmallDeal.addEventListener('click', () => {
-            btnDrawSmallDeal.disabled = true;
-            btnDrawBigDeal.disabled = true;
+            disableAllDrawButtons();
             handleDrawCard('small_deal', guestDiceResult);
         });
     }
 
     if (btnDrawBigDeal) {
         btnDrawBigDeal.addEventListener('click', () => {
-            btnDrawSmallDeal.disabled = true;
-            btnDrawBigDeal.disabled = true;
+            disableAllDrawButtons();
             handleDrawCard('big_deal', guestDiceResult);
+        });
+    }
+
+    // 🌟 追加: Market を引く
+    if (btnDrawMarket) {
+        btnDrawMarket.addEventListener('click', () => {
+            disableAllDrawButtons();
+            handleDrawCard('market', guestDiceResult);
+        });
+    }
+
+    // 🌟 追加: Doodad を引く
+    if (btnDrawDoodad) {
+        btnDrawDoodad.addEventListener('click', () => {
+            disableAllDrawButtons();
+            handleDrawCard('doodad', guestDiceResult);
         });
     }
 
