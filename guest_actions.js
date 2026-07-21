@@ -11,12 +11,32 @@ const PAYDAY_CELLS = [0, 5, 11, 18];
 
 // 🌟 --- ラットレースのマス定義（全24マス） ---
 // サイコロを振った後、どのマスに止まったかを判定するための配列です。
+// ※画面のUI（盤面）と完全一致するように修正済み
 const BOARD_CELLS = [
-    'paycheck', 'opportunity', 'doodad', 'opportunity', 'market',
-    'paycheck', 'opportunity', 'charity', 'opportunity', 'doodad',
-    'opportunity', 'paycheck', 'market', 'opportunity', 'baby',
-    'opportunity', 'doodad', 'opportunity', 'paycheck', 'opportunity',
-    'market', 'opportunity', 'doodad', 'opportunity'
+    'paycheck',    // 00ＣＦ
+    'doodad',      // 01娯楽
+    'opportunity', // 02好機
+    'charity',     // 03寄付
+    'opportunity', // 04好機
+    'paycheck',    // 05ＣＦ
+    'opportunity', // 06好機
+    'doodad',      // 07娯楽
+    'opportunity', // 08好機
+    'baby',        // 09子供
+    'opportunity', // 10好機
+    'paycheck',    // 11ＣＦ
+    'market',      // 12市場
+    'opportunity', // 13好機
+    'doodad',      // 14娯楽
+    'opportunity', // 15好機
+    'charity',     // 16寄付
+    'opportunity', // 17好機
+    'paycheck',    // 18ＣＦ
+    'opportunity', // 19好機
+    'downsized',   // 20解雇
+    'opportunity', // 21好機
+    'market',      // 22市場
+    'opportunity'  // 23好機
 ];
 
 /**
