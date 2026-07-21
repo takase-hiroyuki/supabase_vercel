@@ -25,6 +25,10 @@ const btnSetTurn = document.getElementById('btn-set-turn');
 // 「🎲 初期シャッフル＆ゲーム開始」ボタン
 const btnInitialShuffleStart = document.getElementById('btn-initial-shuffle-start');
 
+// 退室管理用の要素
+const btnKickParticipant = document.getElementById('btn-kick-participant');
+const inputKickOrder = document.getElementById('input-kick-order');
+
 // キャッシュ用の変数
 let latestParticipants = [];
 let currentTurnUserIdCache = null;
@@ -44,6 +48,49 @@ const updateParticipantTable = (participants) => {
     // 参加者情報が更新されたら手番表示も再計算する
     updateTurnDisplay();
 };
+
+// ====== 🌟新規追加：ページロード時のルーム状態初期フェッチ関数 ======
+const fetchInitialRoomState = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('rooms')
+            .select('status, game_state, current_turn_user_id')
+            .eq('id', roomId)
+            .single();
+
+        if (error) {
+            console.error("初期ルーム状態の取得に失敗しました:", error);
+            return;
+        }
+
+        if (data) {
+            currentTurnUserIdCache = data.current_turn_user_id;
+
+            // ステータスとボタンのUI復元
+            if (displayRoomStatus) {
+                if (data.status === 'playing') {
+                    displayRoomStatus.textContent = 'playing (ゲーム進行中)';
+                    if (btnInitialShuffleStart) {
+                        btnInitialShuffleStart.disabled = true;
+                        btnInitialShuffleStart.textContent = 'ゲーム開始済み';
+                    }
+                } else {
+                    displayRoomStatus.textContent = 'waiting (準備中)';
+                }
+            }
+
+            // 山札データのUI復元
+            if (data.game_state) {
+                renderDeckCounts(data.game_state);
+            }
+
+            updateTurnDisplay();
+        }
+    } catch (err) {
+        console.error("初期ルーム状態フェッチ例外:", err);
+    }
+};
+// =========================================================================
 
 // ====== 新規追加：初期シャッフル＆ゲーム開始 ======
 if (btnInitialShuffleStart) {
@@ -135,6 +182,10 @@ if (btnSetTurn) {
 
 // 4. リアルタイム監視を開始
 console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
+
+// 🌟【追加】ページ起動時に一度サーバーから最新状態を必ず取得して適用
+fetchInitialRoomState();
+
 subscribeToParticipants(roomId, updateParticipantTable);
 
 // 部屋（手番情報・ゲーム状態）の変更をリアルタイム監視
@@ -178,9 +229,6 @@ if (btnClearRoom) {
 }
 
 // 6. 特定の参加者を退室させる処理
-const btnKickParticipant = document.getElementById('btn-kick-participant');
-const inputKickOrder = document.getElementById('input-kick-order');
-
 if (btnKickParticipant && inputKickOrder) {
     btnKickParticipant.addEventListener('click', async () => {
         const orderValue = parseInt(inputKickOrder.value.trim(), 10);
