@@ -21,12 +21,20 @@ export function renderCurrentCard(currentCard, myUserId, onCardAction) {
     const btnPayDoodad = document.getElementById(SEL_C.BTN_PAY_DOODAD);
     const btnPass = document.getElementById(SEL_C.BTN_PASS);
 
+    // テキスト・数値表示用の要素を取得
+    const elStatusMsg = document.getElementById(SEL_C.STATUS_MESSAGE);
+    const elNumContainer = document.getElementById(SEL_C.NUMERICAL_DETAILS_CONTAINER);
+    const elCost = document.getElementById(SEL_C.DETAIL_COST);
+    const elDownpayment = document.getElementById(SEL_C.DETAIL_DOWNPAYMENT);
+    const elCashflow = document.getElementById(SEL_C.DETAIL_CASHFLOW);
+
     // 1. 場にカードがない、またはすでに処理完了(completed)状態の場合のUI同期
     if (!currentCard || currentCard.status === "completed") {
-        const container = document.getElementById(SEL_C.CONTAINER);
-        if (container) {
-            // テキスト表示領域のみ初期化し、ボタン群はすべて無効化してそこに残す
-            container.querySelector("p").textContent = "現在場に出ているカードはありません。";
+        if (elStatusMsg) {
+            elStatusMsg.textContent = "現在場に出ているカードはありません。";
+        }
+        if (elNumContainer) {
+            elNumContainer.style.display = "none"; // 数値エリアを隠す
         }
         
         // 全ボタンをグレーアウト（押せないけれど、そこに存在する教育的状態）
@@ -38,14 +46,29 @@ export function renderCurrentCard(currentCard, myUserId, onCardAction) {
         return;
     }
 
-    // 2. カードが存在する場合のテキスト記述の同期
-    const container = document.getElementById(SEL_C.CONTAINER);
-    if (container) {
-        const textElement = container.querySelector("p");
-        if (textElement) {
-            // 🌟 type キーに対応、および description (説明文) を表示に含めるように修正
-            textElement.textContent = `【${currentCard.title || '無題のカード'}】(種類: ${currentCard.type})\n${currentCard.description || ''}`;
-        }
+    // 2. カードが存在する場合のテキスト・数値データの同期
+    if (elStatusMsg) {
+        // 🌟 タイトル、種類、説明文を表示
+        elStatusMsg.textContent = `【${currentCard.title || '無題のカード'}】(種類: ${currentCard.type})\n${currentCard.description || ''}`;
+    }
+
+    // 🌟 数値データの抽出と表示制御
+    // データベースのカードオブジェクト（JSON）に定義されているキーが存在するかチェック
+    const hasCost = currentCard.cost !== undefined && currentCard.cost !== null;
+    const hasDownpayment = currentCard.down_payment !== undefined && currentCard.down_payment !== null;
+    const hasCashflow = currentCard.cash_flow !== undefined && currentCard.cash_flow !== null;
+
+    if (hasCost || hasDownpayment || hasCashflow) {
+        // いずれかの数値が存在する場合はエリアを表示
+        if (elNumContainer) elNumContainer.style.display = "block";
+        
+        // 各数値をフォーマットして流し込む（データがない場合は 0 を表示）
+        if (elCost) elCost.textContent = hasCost ? currentCard.cost.toLocaleString() : '0';
+        if (elDownpayment) elDownpayment.textContent = hasDownpayment ? currentCard.down_payment.toLocaleString() : '0';
+        if (elCashflow) elCashflow.textContent = hasCashflow ? currentCard.cash_flow.toLocaleString() : '0';
+    } else {
+        // 数値データが一切ないカード（例: 一部のMarket等）の場合は非表示
+        if (elNumContainer) elNumContainer.style.display = "none";
     }
 
     // 3. 自分自身にこのカードに対する選択権・所有権があるかを判定
@@ -56,7 +79,6 @@ export function renderCurrentCard(currentCard, myUserId, onCardAction) {
     // 4. 教育的 disabled 制御：カードの種類に応じて、選択可能なオプションのみを解放
     if (isMyCardTurn) {
         // 不動産・ビジネスカード (Small/Big Deal の一部)
-        // ※現状は仮判定として、引いたカードのマスターデータ(cost等)がないため、一旦Deal系は購入を有効化
         if (deckType === 'big_deal' || deckType === 'small_deal') {
             if (btnBuyRealEstate) btnBuyRealEstate.disabled = false;
             if (btnBuyStock) btnBuyStock.disabled = false; // 株か不動産かは未確定なため両方解放
