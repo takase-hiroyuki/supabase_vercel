@@ -21,6 +21,10 @@ export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVer
     const displayPassiveIncome = document.getElementById(fSelectors.DISPLAY_PASSIVE_INCOME);
     const displayTotalExpenses = document.getElementById(fSelectors.DISPLAY_TOTAL_EXPENSES);
     
+    // 🌟 追加: 総収入とキャッシュフローの正解表示用要素を取得
+    const displayTotalIncome = document.getElementById(fSelectors.DISPLAY_TOTAL_INCOME);
+    const displayMonthlyCashflow = document.getElementById(fSelectors.DISPLAY_MONTHLY_CASHFLOW);
+    
     const inputTotalIncome = document.getElementById(fSelectors.INPUT_TOTAL_INCOME);
     const inputNetCashflow = document.getElementById(fSelectors.INPUT_NET_CASHFLOW);
     const btnCheckCalculations = document.getElementById(fSelectors.BTN_CHECK_CALCULATIONS);
@@ -48,14 +52,22 @@ export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVer
     if (displaySalary) displaySalary.textContent = financials.income.salary?.toLocaleString() || 0;
     if (displayPassiveIncome) displayPassiveIncome.textContent = financials.income.passive?.toLocaleString() || 0;
     
-    // 総支出の計算と表示
+    // プログラム内部での正解計算ロジック
+    const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
+    
     let correctTotalExpenses = 0;
     Object.keys(financials.expenses).forEach(key => {
         if (key !== 'total') {
             correctTotalExpenses += (financials.expenses[key] || 0);
         }
     });
+
+    const correctCashflow = correctTotalIncome - correctTotalExpenses;
+
+    // 🌟 計算結果を画面の正解用表示枠に反映
+    if (displayTotalIncome) displayTotalIncome.textContent = correctTotalIncome.toLocaleString();
     if (displayTotalExpenses) displayTotalExpenses.textContent = correctTotalExpenses.toLocaleString();
+    if (displayMonthlyCashflow) displayMonthlyCashflow.textContent = correctCashflow.toLocaleString();
 
     // --- 2. 閲覧モード（自分か他人か）および計算状態による制御 ---
     if (isReadOnly || !playerState.is_calculating) {
@@ -83,10 +95,6 @@ export function renderFinancials(playerState, isReadOnly, onVerifySuccess, onVer
         // 入力値の取得（空文字の場合は0として扱う）
         const userTotalIncome = parseInt(inputTotalIncome.value, 10) || 0;
         const userNetCashflow = parseInt(inputNetCashflow.value, 10) || 0;
-
-        // プログラム内部での正解判定ロジック
-        const correctTotalIncome = (financials.income.salary || 0) + (financials.income.passive || 0);
-        const correctCashflow = correctTotalIncome - correctTotalExpenses;
 
         // 検証
         if (userTotalIncome === correctTotalIncome && userNetCashflow === correctCashflow) {
