@@ -49,12 +49,13 @@ const updateParticipantTable = (participants) => {
     updateTurnDisplay();
 };
 
-// ====== 🌟新規追加：ページロード時のルーム状態初期フェッチ関数 ======
+// ====== 🌟修正版：ページロード時のルーム状態初期フェッチ関数 ======
 const fetchInitialRoomState = async () => {
     try {
+        // 修正：存在しない 'status' カラムの取得を削除
         const { data, error } = await supabase
             .from('rooms')
-            .select('status, game_state, current_turn_user_id')
+            .select('game_state, current_turn_user_id')
             .eq('id', roomId)
             .single();
 
@@ -66,9 +67,12 @@ const fetchInitialRoomState = async () => {
         if (data) {
             currentTurnUserIdCache = data.current_turn_user_id;
 
+            // 修正：game_state のデータ有無でゲーム進行中かを判定する
+            const isPlaying = data.game_state !== null && Object.keys(data.game_state).length > 0;
+
             // ステータスとボタンのUI復元
             if (displayRoomStatus) {
-                if (data.status === 'playing') {
+                if (isPlaying) {
                     displayRoomStatus.textContent = 'playing (ゲーム進行中)';
                     if (btnInitialShuffleStart) {
                         btnInitialShuffleStart.disabled = true;
@@ -76,6 +80,10 @@ const fetchInitialRoomState = async () => {
                     }
                 } else {
                     displayRoomStatus.textContent = 'waiting (準備中)';
+                    if (btnInitialShuffleStart) {
+                        btnInitialShuffleStart.disabled = false;
+                        btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
+                    }
                 }
             }
 
