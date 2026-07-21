@@ -61,9 +61,28 @@
         <!-- カードドロー・取引エリア -->
         <div id="card-display-container">
             <fieldset>
-                <!-- 🌟 id="display-card-legend" を追加 -->
                 <legend id="display-card-legend">ドローカード状況</legend>
                 <p id="card-status-message">現在場に出ているカードはありません。</p>
+                
+                <!-- 🌟 追加: カードの「数値的な価値」を表示するエリア -->
+                <div id="card-numerical-details" style="display: none; margin-bottom: 15px;">
+                    <table border="1" cellspacing="0" cellpadding="5">
+                        <tbody>
+                            <tr>
+                                <td>価格 (Cost)</td>
+                                <td>$<span id="card-detail-cost">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>頭金 (Down Payment)</td>
+                                <td>$<span id="card-detail-downpayment">0</span></td>
+                            </tr>
+                            <tr>
+                                <td>キャッシュフロー (Cash Flow)</td>
+                                <td>$<span id="card-detail-cashflow">0</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 
                 <fieldset id="deck-draw-options">
                     <legend>山札からカードを引く</legend>
@@ -104,7 +123,6 @@
                             <td>不労所得 (Passive Income)</td>
                             <td><span id="display-passive-income">0</span></td>
                         </tr>
-                        <!-- 🌟 追加: 総収入の表示用（正解表示用） -->
                         <tr>
                             <td>総収入 (Total Income)</td>
                             <td><span id="display-total-income">0</span></td>
@@ -117,7 +135,6 @@
                             <td>総支出 (Total Expenses)</td>
                             <td><span id="display-total-expenses">0</span></td>
                         </tr>
-                        <!-- 🌟 追加: 毎月のキャッシュフローの表示用（正解表示用） -->
                         <tr>
                             <td>毎月のキャッシュフロー (Monthly Cash Flow)</td>
                             <td><span id="display-monthly-cashflow">0</span></td>
