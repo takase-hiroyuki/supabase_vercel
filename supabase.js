@@ -4,7 +4,7 @@
 import { supabase } from './supabase_client.js';
 import { 
     insertParticipant, 
-    updateParticipantState, // 引数が仕様変更（第2引数は差分オブジェクトを受け取る）
+    updateParticipantState, 
     checkExistingParticipant, 
     deleteParticipant, 
     subscribeToParticipants 
@@ -12,17 +12,13 @@ import {
 import { 
     getCurrentTurn, 
     updateCurrentTurn, 
-    updateRoomGameState, // ⭕️ 共通カード状態パッチ用関数をインポート
+    updateRoomGameState, 
     clearRoomParticipants, 
     subscribeToRoom 
 } from './supabase_game.js';
 
 /**
  * 山札からカードを1枚引く (RPC呼び出し)
- * @param {string} roomId - 部屋ID
- * @param {string} userId - プレイヤーのユーザーID
- * @param {string} deckType - デッキの種類 ('small_deal', 'big_deal', 'market', 'doodad')
- * @returns {Promise<object>} データベースからの処理結果（カード情報など）
  */
 export async function drawCard(roomId, userId, deckType) {
     const { data, error } = await supabase.rpc('draw_card_from_deck', {
@@ -41,11 +37,6 @@ export async function drawCard(roomId, userId, deckType) {
 
 /**
  * 財務データのトランザクション処理およびカード状態の更新 (RPC呼び出し)
- * @param {string} roomId - 部屋ID
- * @param {string} userId - プレイヤーのユーザーID
- * @param {number} cashDelta - キャッシュの増減額（マイナスなら支出）
- * @param {number} passiveIncomeDelta - 不労所得の増減額
- * @param {boolean} unlockCalc - 処理後に計算ロックを解除するかどうか
  */
 export async function processFinancialTransaction(roomId, userId, cashDelta, passiveIncomeDelta, unlockCalc) {
     const { data, error } = await supabase.rpc('process_financial_transaction', {
@@ -65,23 +56,69 @@ export async function processFinancialTransaction(roomId, userId, cashDelta, pas
 }
 
 /**
+ * 不動産資産を購入する (RPC呼び出し)
+ */
+export async function buyRealEstateAsset(roomId, userId, assetName, cost, downPayment, mortgage, passiveIncome) {
+    const { data, error } = await supabase.rpc('buy_real_estate_asset', {
+        p_room_id: roomId,
+        p_user_id: userId,
+        p_asset_name: assetName,
+        p_cost: cost,
+        p_down_payment: downPayment,
+        p_mortgage: mortgage,
+        p_passive_income: passiveIncome
+    });
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * 株式資産を購入する (RPC呼び出し)
+ */
+export async function buyStockAsset(roomId, userId, stockSymbol, buyPrice, quantity) {
+    const { data, error } = await supabase.rpc('buy_stock_asset', {
+        p_room_id: roomId,
+        p_user_id: userId,
+        p_stock_symbol: stockSymbol,
+        p_buy_price: buyPrice,
+        p_quantity: quantity
+    });
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * 株式資産を売却する (RPC呼び出し)
+ */
+export async function sellStockAsset(roomId, userId, stockSymbol, sellPrice, quantity) {
+    const { data, error } = await supabase.rpc('sell_stock_asset', {
+        p_room_id: roomId,
+        p_user_id: userId,
+        p_stock_symbol: stockSymbol,
+        p_sell_price: sellPrice,
+        p_quantity: quantity
+    });
+
+    if (error) throw error;
+    return data;
+}
+
+/**
  * @module supabase
  * @description 各エンドポイントおよびゲームロジック用Supabase操作関数を集約するハブモジュール
- * 
- * 💡 注意 (データアクセス方針 5.2):
- * updateParticipantState(userId, statePatch) は、オブジェクト全体の完全上書きを禁止しています。
- * プレイヤー情報の更新時には、変更したいプロパティ（例: { last_dice: 3 }）のみを渡してください。
  */
 export {
     supabase,
     insertParticipant,
-    updateParticipantState, // 差分アトミック更新版
+    updateParticipantState, 
     checkExistingParticipant,
     deleteParticipant,
     subscribeToParticipants,
     getCurrentTurn,
     updateCurrentTurn,
-    updateRoomGameState, // ⭕️ 外部アクションモジュールから使えるようにエクスポート
+    updateRoomGameState, 
     clearRoomParticipants,
     subscribeToRoom
 };
