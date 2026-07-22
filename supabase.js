@@ -40,6 +40,31 @@ export async function drawCard(roomId, userId, deckType) {
 }
 
 /**
+ * 財務データのトランザクション処理およびカード状態の更新 (RPC呼び出し)
+ * @param {string} roomId - 部屋ID
+ * @param {string} userId - プレイヤーのユーザーID
+ * @param {number} cashDelta - キャッシュの増減額（マイナスなら支出）
+ * @param {number} passiveIncomeDelta - 不労所得の増減額
+ * @param {boolean} unlockCalc - 処理後に計算ロックを解除するかどうか
+ */
+export async function processFinancialTransaction(roomId, userId, cashDelta, passiveIncomeDelta, unlockCalc) {
+    const { data, error } = await supabase.rpc('process_financial_transaction', {
+        p_user_id: userId,
+        p_room_id: roomId,
+        p_cash_delta: cashDelta,
+        p_passive_income_delta: passiveIncomeDelta,
+        p_unlock_calc: unlockCalc
+    });
+
+    if (error) {
+        console.error("【エラー】財務トランザクション処理に失敗しました:", error);
+        throw error;
+    }
+    
+    return data;
+}
+
+/**
  * @module supabase
  * @description 各エンドポイントおよびゲームロジック用Supabase操作関数を集約するハブモジュール
  * 
@@ -58,7 +83,8 @@ export {
     updateCurrentTurn,
     updateRoomGameState, // ⭕️ 外部アクションモジュールから使えるようにエクスポート
     clearRoomParticipants,
-    subscribeToRoom
+    subscribeToRoom,
+    processFinancialTransaction // 🌟 追加: 財務トランザクションRPC
 };
 
 console.log("【デバッグ】supabase.js: ハブ（統合窓口）モジュールとして正常に読み込まれました。");
