@@ -1,8 +1,8 @@
 // guest_actions.js     (進行・Paycheck・ローン・カード・脱出申請の全アクション一括集約)
 
 import { roomId } from './config.js';
-// 🌟 supabase.js から drawCard をインポートに追加
-import { updateParticipantState, updateCurrentTurn, updateRoomGameState, drawCard } from './supabase.js';
+// 🌟 supabase.js から drawCard と processFinancialTransaction をインポートに追加
+import { updateParticipantState, updateCurrentTurn, updateRoomGameState, drawCard, processFinancialTransaction } from './supabase.js';
 import { rollDice, calculateNextPosition } from './dice.js';
 import { guestState } from './guest_state.js';
 
@@ -144,6 +144,10 @@ export async function handleDrawCard(deckType, guestDiceResult) {
             type: deckType, // 'small_deal', 'big_deal' など
             title: result.title,
             description: result.description,
+            // 🌟 サーバーからの金額データを引き継ぐための準備（現在はRPC側が未対応のためundefinedになる）
+            cost: result.cost,
+            down_payment: result.down_payment,
+            cash_flow: result.cash_flow,
             status: "active" // 行動待ち状態（ここから売買や支払いに繋がる）
         };
 
@@ -260,7 +264,7 @@ export async function handleBankLoanAction(type) {
             cash += 1000;
             alert(`銀行からローン $1,000 を借り入れました。 (毎月の金利支出: +$100)`);
         } else if (type === 'payback') {
-            if (bankLoan < 1000) { alert('返済するローン残残高がありません。'); return; }
+            if (bankLoan < 1000) { alert('返済するローン残高がありません。'); return; }
             if (cash < 1000) { alert('返済に必要な手持ちキャッシュが足りません！'); return; }
             bankLoan -= 1000;
             cash -= 1000;
@@ -326,7 +330,7 @@ export async function handleEscapeRatRace(btnEscape) {
 
 /**
  * 🌟 カードに対する意思決定アクション (購入、売却、支払、パス)
- * roomsテーブルの共通 game_state.current_card.status を completed に更新し、手番を進行可能にする
+ * RPC関数を用いてサーバーサイドで安全に財務データを更新し、ロックを解除する
  */
 export async function handleCardAction(actionType) {
     // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
@@ -338,24 +342,21 @@ export async function handleCardAction(actionType) {
     try {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
-        // 🌟 修正: パスした場合、財務の変動はないため強制的に計算ロックを解除する
         if (actionType === 'pass') {
-            await updateParticipantState(guestState.myUserId, { 
-                is_calculating: false,
-                calculation_phase: null
-            });
+            // パス：資金変動なし（0, 0）、計算ロック解除（true）
+            await processFinancialTransaction(roomId, guestState.myUserId, 0, 0, true);
+            alert("パスしました。");
+        } 
+        else if (actionType === 'pay_doodad') {
+            // 無駄遣い（Doodad）：キャッシュ減少
+            const cost = currentCard.cost || 0; 
+            await processFinancialTransaction(roomId, guestState.myUserId, -cost, 0, true);
+            alert(`無駄遣い費用 $${cost.toLocaleString()} を支払いました。`);
         }
-
-        const updatedGameState = {
-            current_card: {
-                ...currentCard,
-                status: "completed"
-            }
-        };
-
-        // rooms テーブルの game_state 内の該当カードを完了に書き換えるRPCを叩く
-        await updateRoomGameState(roomId, updatedGameState);
-        alert(`カードアクション [${actionType}] の送信・処理が完了しました。`);
+        else {
+            // 不動産や株の購入は次のステップで専用RPCへ接続します
+            alert(`アクション [${actionType}] の処理は現在移行中です。`);
+        }
 
     } catch (error) {
         console.error('カードアクションエラー:', error);
