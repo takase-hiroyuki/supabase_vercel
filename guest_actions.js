@@ -1,8 +1,17 @@
 // guest_actions.js     (進行・Paycheck・ローン・カード・脱出申請の全アクション一括集約)
 
 import { roomId } from './config.js';
-// 🌟 supabase.js から drawCard と processFinancialTransaction をインポートに追加
-import { updateParticipantState, updateCurrentTurn, updateRoomGameState, drawCard, processFinancialTransaction } from './supabase.js';
+// 🌟 supabase.js から購入用RPC関数を追加インポート
+import { 
+    updateParticipantState, 
+    updateCurrentTurn, 
+    updateRoomGameState, 
+    drawCard, 
+    processFinancialTransaction,
+    buyRealEstateAsset,
+    buyStockAsset,
+    sellStockAsset
+} from './supabase.js';
 import { rollDice, calculateNextPosition } from './dice.js';
 import { guestState } from './guest_state.js';
 
@@ -10,8 +19,6 @@ import { guestState } from './guest_state.js';
 const PAYDAY_CELLS = [0, 5, 11, 18];
 
 // 🌟 --- ラットレースのマス定義（全24マス） ---
-// サイコロを振った後、どのマスに止まったかを判定するための配列です。
-// ※画面のUI（盤面）と完全一致するように修正済み
 const BOARD_CELLS = [
     'paycheck',    // 00ＣＦ
     'doodad',      // 01娯楽
@@ -59,7 +66,6 @@ function calculateSalaryOnMove(oldPos, newPos, cashflow) {
  * サイコロを振ってコマを移動させるアクション
  */
 export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, guestDiceResult) {
-    // 🌟【最重要：防衛ロジック】ホストがゲームを開始するまでは絶対にサイコロを振らせない
     if (!guestState.isGameStarted()) {
         alert("ホストがゲームを開始するまでお待ちください。");
         return;
@@ -81,7 +87,6 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
         const currentFinancials = myData.state.financials || {};
         const cashflow = currentFinancials.cashflow ?? 0;
 
-        // パスした分のPaycheckを算出して guestState にキープ
         const calculatedSalary = calculateSalaryOnMove(currentPosition, nextPosition, cashflow);
         guestState.setPendingSalary(calculatedSalary);
 
@@ -90,7 +95,6 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
             last_dice: diceRoll
         };
 
-        // 🌟 止まったマスの種類を判定
         const cellType = BOARD_CELLS[nextPosition];
         guestDiceResult.textContent = `移動完了: 出目=${diceRoll}, 位置=${nextPosition}（${cellType}）。`;
         
@@ -105,7 +109,6 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
             btnClaimPaycheck.disabled = true;
             btnClaimPaycheck.textContent = `Paycheckを請求する`;
             
-            // 給料が発生していない場合は即座にカードドローの判定へ進む
             if (cellType === 'doodad' || cellType === 'market') {
                 await handleDrawCard(cellType, guestDiceResult);
             } else if (cellType === 'opportunity') {
@@ -121,7 +124,7 @@ export async function handleRollDice(btnRollDice, btnClaimPaycheck, btnEndTurn, 
 }
 
 /**
- * 🌟 山札からカードを引き、部屋全体（ホスト画面含む）に表示するアクション
+ * 山札からカードを引き、部屋全体（ホスト画面含む）に表示するアクション
  */
 export async function handleDrawCard(deckType, guestDiceResult) {
     if (!guestState.isGameStarted()) return;
@@ -129,7 +132,6 @@ export async function handleDrawCard(deckType, guestDiceResult) {
     try {
         guestDiceResult.textContent = `カードを引いています...`;
         
-        // 1. データベース側のRPCを呼び出してカードをドロー＆ロック処理
         const result = await drawCard(roomId, guestState.myUserId, deckType);
         
         if (!result.success) {
@@ -138,17 +140,19 @@ export async function handleDrawCard(deckType, guestDiceResult) {
             return;
         }
 
-        // 2. 引いたカードの情報を rooms テーブルの game_state.current_card にセットし、全員に共有
         const currentCardData = {
             id: result.card_id,
-            type: deckType, // 'small_deal', 'big_deal' など
+            type: deckType,
             title: result.title,
             description: result.description,
-            // 🌟 サーバーからの金額データを引き継ぐための準備（現在はRPC側が未対応のためundefinedになる）
+            // 🌟 追加: DBから取得した金額データをキャッシュへ保存
             cost: result.cost,
             down_payment: result.down_payment,
-            cash_flow: result.cash_flow,
-            status: "active" // 行動待ち状態（ここから売買や支払いに繋がる）
+            mortgage: result.mortgage,
+            passive_income: result.passive_income,
+            symbol: result.symbol,
+            asset_type: result.asset_type,
+            status: "active"
         };
 
         await updateRoomGameState(roomId, { current_card: currentCardData });
@@ -166,7 +170,6 @@ export async function handleDrawCard(deckType, guestDiceResult) {
  * Paycheck（キャッシュフロー）を請求するアクション
  */
 export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
-    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
     if (!guestState.isGameStarted()) return;
 
     const myData = guestState.getMyData();
@@ -192,7 +195,6 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
 
         await updateParticipantState(guestState.myUserId, statePatch);
 
-        // 🌟 給料の請求が終わった後、止まったマスがカードマスならドロー判定を行う
         const currentPosition = myData.state.position ?? 0;
         const cellType = BOARD_CELLS[currentPosition];
 
@@ -212,7 +214,6 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
  * 手番を終了して次のプレイヤーへ回すアクション（もらい忘れ含む）
  */
 export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResult) {
-    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
     if (!guestState.isGameStarted()) return;
 
     try {
@@ -240,11 +241,9 @@ export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResul
 }
 
 /**
- * 🌟 銀行ローンの借入 (+$1,000単位) および返済 (-$1,000単位) アクション
- * サーバー側で利息10%が自動連動計算される前提で、financialsの数値を安全にパッチ
+ * 銀行ローンの借入 (+$1,000単位) および返済 (-$1,000単位) アクション
  */
 export async function handleBankLoanAction(type) {
-    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
     if (!guestState.isGameStarted()) {
         alert("ゲーム開始前はローン操作を行えません。");
         return;
@@ -271,7 +270,6 @@ export async function handleBankLoanAction(type) {
             alert(`銀行ローン $1,000 を返済しました。 (毎月の金利支出: -$100)`);
         }
 
-        // 10%の金利利息を連動計算
         loanInterest = Math.floor(bankLoan * 0.1);
 
         const statePatch = {
@@ -298,11 +296,9 @@ export async function handleBankLoanAction(type) {
 }
 
 /**
- * 🌟 ラットレース脱出申請アクション
- * サーバーサイド勝利判定RPC（またはステータス更新）に連動して役割を変更
+ * ラットレース脱出申請アクション
  */
 export async function handleEscapeRatRace(btnEscape) {
-    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
     if (!guestState.isGameStarted()) return;
 
     const myData = guestState.getMyData();
@@ -311,11 +307,10 @@ export async function handleEscapeRatRace(btnEscape) {
     try {
         btnEscape.disabled = true;
         
-        // 役割(role)を「ファーストトラック」へ昇格する差分パッチを作成
         const statePatch = {
             role: "ファーストトラック",
-            position: 0, // 内周のスタートマスへリセット
-            last_dice: 0 // ダイス状態の初期化
+            position: 0,
+            last_dice: 0
         };
 
         alert("🎉 おめでとうございます！不労所得が総支出を超過し、ラットレース脱出の申請が承認されました！ファーストトラックへ移行します。");
@@ -330,10 +325,9 @@ export async function handleEscapeRatRace(btnEscape) {
 
 /**
  * 🌟 カードに対する意思決定アクション (購入、売却、支払、パス)
- * RPC関数を用いてサーバーサイドで安全に財務データを更新し、ロックを解除する
+ * 各種RPC関数を用いてサーバーサイドで安全に財務データを更新し、ロックを解除する
  */
 export async function handleCardAction(actionType) {
-    // 🌟【防衛ロジック】ゲーム開始前のアクションをブロック
     if (!guestState.isGameStarted()) return;
 
     const currentCard = guestState.currentCardCache;
@@ -343,23 +337,69 @@ export async function handleCardAction(actionType) {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
         if (actionType === 'pass') {
-            // パス：資金変動なし（0, 0）、計算ロック解除（true）
             await processFinancialTransaction(roomId, guestState.myUserId, 0, 0, true);
             alert("パスしました。");
         } 
         else if (actionType === 'pay_doodad') {
-            // 無駄遣い（Doodad）：キャッシュ減少
             const cost = currentCard.cost || 0; 
             await processFinancialTransaction(roomId, guestState.myUserId, -cost, 0, true);
             alert(`無駄遣い費用 $${cost.toLocaleString()} を支払いました。`);
         }
+        else if (actionType === 'buy_real_estate') {
+            // 不動産の購入
+            const title = currentCard.title || "不動産";
+            const cost = currentCard.cost || 0;
+            const downPayment = currentCard.down_payment || 0;
+            const mortgage = currentCard.mortgage || 0;
+            const passiveIncome = currentCard.passive_income || 0;
+
+            const res = await buyRealEstateAsset(roomId, guestState.myUserId, title, cost, downPayment, mortgage, passiveIncome);
+            if (!res.success) throw new Error(res.error);
+            
+            alert(`【${title}】を購入しました！ (不労所得 +$${passiveIncome})`);
+        }
+        else if (actionType === 'buy_stock') {
+            // 株式の購入（購入数はプロンプトで確認）
+            const symbol = currentCard.symbol || "STOCK";
+            const price = currentCard.cost || 0;
+            
+            const quantityStr = prompt(`【${symbol}】をいくらで購入しますか？\n(1株: $${price})`, "10");
+            if (!quantityStr) return; // キャンセル時
+            const quantity = parseInt(quantityStr, 10);
+            if (isNaN(quantity) || quantity <= 0) {
+                alert("正しい数値を入力してください。");
+                return;
+            }
+
+            const res = await buyStockAsset(roomId, guestState.myUserId, symbol, price, quantity);
+            if (!res.success) throw new Error(res.error);
+            
+            alert(`【${symbol}】を ${quantity} 株購入しました。`);
+        }
+        else if (actionType === 'sell_stock') {
+            // 株式の売却（売却数はプロンプトで確認）
+            const symbol = currentCard.symbol || "STOCK";
+            const price = currentCard.cost || 0;
+            
+            const quantityStr = prompt(`【${symbol}】をいくらで売却しますか？\n(1株: $${price})`, "10");
+            if (!quantityStr) return;
+            const quantity = parseInt(quantityStr, 10);
+            if (isNaN(quantity) || quantity <= 0) {
+                alert("正しい数値を入力してください。");
+                return;
+            }
+
+            const res = await sellStockAsset(roomId, guestState.myUserId, symbol, price, quantity);
+            if (!res.success) throw new Error(res.error);
+            
+            alert(`【${symbol}】を ${quantity} 株売却しました。`);
+        }
         else {
-            // 不動産や株の購入は次のステップで専用RPCへ接続します
-            alert(`アクション [${actionType}] の処理は現在移行中です。`);
+            alert(`未対応のアクションです: [${actionType}]`);
         }
 
     } catch (error) {
         console.error('カードアクションエラー:', error);
-        alert('カードアクションの同期に失敗しました。');
+        alert(error.message || 'カードアクションの処理に失敗しました。');
     }
 }
