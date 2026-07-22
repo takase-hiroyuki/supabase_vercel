@@ -83,8 +83,7 @@ export {
     updateCurrentTurn,
     updateRoomGameState, // ⭕️ 外部アクションモジュールから使えるようにエクスポート
     clearRoomParticipants,
-    subscribeToRoom,
-    processFinancialTransaction // 🌟 追加: 財務トランザクションRPC
+    subscribeToRoom
 };
 
 console.log("【デバッグ】supabase.js: ハブ（統合窓口）モジュールとして正常に読み込まれました。");
