@@ -13,7 +13,7 @@
 
     <div id="section-host">
         
-        <!-- 🌟【新設】部屋ステータス管理・ライフサイクル制御エリア -->
+        <!-- 🌟部屋ステータス管理・ライフサイクル制御エリア -->
         <fieldset>
             <legend>部屋ステータス管理・ライフサイクル制御</legend>
             <p>
@@ -21,7 +21,7 @@
             </p>
             <p>
                 <button id="btn-initial-shuffle-start">🎲 初期シャッフル＆ゲーム開始</button>
-                <button id="btn-manual-reshuffle">🔄 山札再シャッフル</button>
+                <!-- 古い「山札再シャッフル」ボタンは廃止し、下のモニター表に個別ボタンとして移管 -->
                 <button id="btn-force-game-end">⚠️ 全員強制退室＆ゲーム終了</button>
                 <button id="btn-initialize-room">♻️ 部屋を初期化する</button>
             </p>
@@ -29,9 +29,9 @@
 
         <br>
 
-        <!-- 🌟【新設】4種類の山札および使用済みカードの残り枚数監視モニター -->
+        <!-- 🌟4種類の山札および使用済みカードの残り枚数監視モニター -->
         <fieldset>
-            <legend>4大カードデッキ山札残量モニター</legend>
+            <legend>4大カードデッキ山札残量モニター ＆ リシャッフル制御</legend>
             <table border="1" cellpadding="5">
                 <thead>
                     <tr>
@@ -47,6 +47,13 @@
                         <td align="center"><span id="deck-count-big-deal">0</span> 枚</td>
                         <td align="center"><span id="deck-count-market">0</span> 枚</td>
                         <td align="center"><span id="deck-count-doodad">0</span> 枚</td>
+                    </tr>
+                    <!-- 🌟【新設】デッキ個別の手動リシャッフルボタン -->
+                    <tr>
+                        <td align="center"><button id="btn-reshuffle-small-deal">🔄 リシャッフル</button></td>
+                        <td align="center"><button id="btn-reshuffle-big-deal">🔄 リシャッフル</button></td>
+                        <td align="center"><button id="btn-reshuffle-market">🔄 リシャッフル</button></td>
+                        <td align="center"><button id="btn-reshuffle-doodad">🔄 リシャッフル</button></td>
                     </tr>
                 </tbody>
             </table>
