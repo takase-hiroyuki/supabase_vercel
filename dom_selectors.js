@@ -28,9 +28,9 @@ export const DOM_SELECTORS = {
             SECTION: 'section-guest',
             ROOM_ID: 'guest-room-id',
             NAME: 'guest-name',
-            DISPLAY_CURRENT_CASH: 'display-current-cash', // ★ $0 問題のターゲットID
+            DISPLAY_CURRENT_CASH: 'display-current-cash', 
             ROLE: 'guest-role',
-            PROFESSION: 'guest-profession' // 🌟ゲスト画面に職業名（教師・パイロット等）を表示する用
+            PROFESSION: 'guest-profession'
         },
 
         // 手番・サイコロ制御エリア
@@ -38,32 +38,31 @@ export const DOM_SELECTORS = {
             STATUS_AREA: 'dice-status-area',
             DICE_RESULT: 'guest-dice-result',
             BTN_ROLL_DICE: 'btn-roll-dice',
-            // --- 公式準拠：手動アクション・脱出申請ボタン ---
-            BTN_CLAIM_PAYCHECK: 'btn-claim-paycheck', // Paycheckを請求するボタン
-            BTN_END_TURN: 'btn-end-turn',              // 手番を終了するボタン
-            BTN_ESCAPE_RAT_RACE: 'btn-escape-rat-race' // 🌟 タイポを修正：ラットレース脱出を申請するボタン
+            BTN_CLAIM_PAYCHECK: 'btn-claim-paycheck', 
+            BTN_END_TURN: 'btn-end-turn',              
+            BTN_ESCAPE_RAT_RACE: 'btn-escape-rat-race' 
         },
 
         // カードドロー・取引エリア
         CARD: {
             CONTAINER: 'card-display-container',
-            LEGEND: 'display-card-legend',                 // 🌟 追加: 誰が引いたカードかわかるようにする用
-            STATUS_MESSAGE: 'card-status-message',         // 🌟 追加: カードのテキスト説明用
-            NUMERICAL_DETAILS_CONTAINER: 'card-numerical-details', // 🌟 追加: 数値表示エリアのコンテナ
-            DETAIL_COST: 'card-detail-cost',               // 🌟 追加: 価格表示用
-            DETAIL_DOWNPAYMENT: 'card-detail-downpayment', // 🌟 追加: 頭金表示用
-            DETAIL_CASHFLOW: 'card-detail-cashflow',       // 🌟 追加: キャッシュフロー表示用
-            DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   // 🌟 追加: 山札選択用フィールドID
-            BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    // 🌟 追加: Small Dealドローボタン
-            BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        // 🌟 追加: Big Dealドローボタン
-            BTN_DRAW_MARKET: 'btn-draw-market',            // 🌟 追加: Marketドローボタン
-            BTN_DRAW_DOODAD: 'btn-draw-doodad',            // 🌟 追加: Doodadドローボタン
-            OPTIONS_CONTAINER: 'card-action-options',   // 🌟 カードアクション選択肢の親フィールドID
-            BTN_BUY_REALESTATE: 'btn-card-buy-realestate', // 🌟 不動産/ビジネス購入ボタン
-            BTN_BUY_STOCK: 'btn-card-buy-stock',           // 🌟 株式/ファンド購入ボタン
-            BTN_SELL_STOCK: 'btn-card-sell-stock',         // 🌟 株式市場売却ボタン
-            BTN_PAY_DOODAD: 'btn-card-pay-doodad',         // 🌟 無駄遣い費用支払ボタン
-            BTN_PASS: 'btn-card-pass'                      // 🌟 カードアクションパスボタン
+            LEGEND: 'display-card-legend',                 
+            STATUS_MESSAGE: 'card-status-message',         
+            NUMERICAL_DETAILS_CONTAINER: 'card-numerical-details', 
+            DETAIL_COST: 'card-detail-cost',               
+            DETAIL_DOWNPAYMENT: 'card-detail-downpayment', 
+            DETAIL_CASHFLOW: 'card-detail-cashflow',       
+            DRAW_OPTIONS_CONTAINER: 'deck-draw-options',   
+            BTN_DRAW_SMALL_DEAL: 'btn-draw-small-deal',    
+            BTN_DRAW_BIG_DEAL: 'btn-draw-big-deal',        
+            BTN_DRAW_MARKET: 'btn-draw-market',            
+            BTN_DRAW_DOODAD: 'btn-draw-doodad',            
+            OPTIONS_CONTAINER: 'card-action-options',   
+            BTN_BUY_REALESTATE: 'btn-card-buy-realestate', 
+            BTN_BUY_STOCK: 'btn-card-buy-stock',           
+            BTN_SELL_STOCK: 'btn-card-sell-stock',         
+            BTN_PAY_DOODAD: 'btn-card-pay-doodad',         
+            BTN_PASS: 'btn-card-pass'                      
         },
 
         // 財務諸表（PL/BS）手動計算エリア
@@ -73,10 +72,10 @@ export const DOM_SELECTORS = {
             CALC_LOCK_STATUS: 'calc-lock-status',
             DISPLAY_SALARY: 'display-salary',
             DISPLAY_PASSIVE_INCOME: 'display-passive-income',
-            DISPLAY_TOTAL_INCOME: 'display-total-income', // 🌟 追加: 総収入の正解表示用
+            DISPLAY_TOTAL_INCOME: 'display-total-income', 
             INPUT_TOTAL_INCOME: 'input-total-income',
             DISPLAY_TOTAL_EXPENSES: 'display-total-expenses',
-            DISPLAY_MONTHLY_CASHFLOW: 'display-monthly-cashflow', // 🌟 追加: 毎月のキャッシュフローの正解表示用
+            DISPLAY_MONTHLY_CASHFLOW: 'display-monthly-cashflow', 
             INPUT_NET_CASHFLOW: 'input-net-cashflow',
             BTN_CHECK_CALCULATIONS: 'btn-check-calculations'
         },
@@ -89,18 +88,17 @@ export const DOM_SELECTORS = {
             LIABILITY_MORTGAGE: 'display-liability-mortgage',
             LIABILITY_CAR_LOAN: 'display-liability-carloan',
             LIABILITY_RETAIL: 'display-liability-retail',
-            // --- 🌟 手動借入銀行ローン用コントロール＆表示項目 ---
-            LOAN_CONTROL_CONTAINER: 'bank-loan-control',  // 🌟 銀行ローン操作パネルID
-            BTN_BORROW_LOAN: 'btn-borrow-loan',            // 🌟 銀行ローンを借り入れるボタン
-            BTN_PAYBACK_LOAN: 'btn-payback-loan',          // 🌟 銀行ローンを返済するボタン
-            DISPLAY_LIABILITY_BANKLOAN: 'display-liability-bankloan',   // 🌟 銀行ローン残高表示用
-            DISPLAY_EXPENSE_LOANINTEREST: 'display-expense-loaninterest' // 🌟 ローン利息支出表示用
+            LOAN_CONTROL_CONTAINER: 'bank-loan-control',  
+            BTN_BORROW_LOAN: 'btn-borrow-loan',            
+            BTN_PAYBACK_LOAN: 'btn-payback-loan',          
+            DISPLAY_LIABILITY_BANKLOAN: 'display-liability-bankloan',   
+            DISPLAY_EXPENSE_LOANINTEREST: 'display-expense-loaninterest' 
         },
 
         // ゲスト用すごろく盤面モニターID生成用のプレフィックス
         BOARD: {
-            RAT_PREFIX: 'rat-cell-', // 動的に 'rat-cell-0'〜'rat-cell-23' を取得する用
-            FAST_PREFIX: 'fast-cell-' // 動的に 'fast-cell-0'〜'fast-cell-23' を取得する用
+            RAT_PREFIX: 'rat-cell-', 
+            FAST_PREFIX: 'fast-cell-' 
         }
     },
 
@@ -112,11 +110,10 @@ export const DOM_SELECTORS = {
         
         // 🌟部屋ステータス管理・ライフサイクル制御エリア
         LIFECYCLE: {
-            DISPLAY_ROOM_STATUS: 'host-room-status',              // 現在の部屋ステータス表示用
-            BTN_INITIAL_SHUFFLE: 'btn-initial-shuffle-start',     // 初期シャッフル＆ゲーム開始ボタン
-            BTN_MANUAL_RESHUFFLE: 'btn-manual-reshuffle',          // 山札再シャッフルボタン
-            BTN_FORCE_GAME_END: 'btn-force-game-end',              // 全員強制退室＆ゲーム終了ボタン
-            BTN_INITIALIZE_ROOM: 'btn-initialize-room'            // 部屋を初期化するボタン
+            DISPLAY_ROOM_STATUS: 'host-room-status',              
+            BTN_INITIAL_SHUFFLE: 'btn-initial-shuffle-start',     
+            BTN_FORCE_GAME_END: 'btn-force-game-end',             
+            BTN_INITIALIZE_ROOM: 'btn-initialize-room'            
         },
 
         // 🌟4種類の山札および使用済みカードの残り枚数監視モニター
@@ -124,7 +121,12 @@ export const DOM_SELECTORS = {
             SMALL_DEAL_COUNT: 'deck-count-small-deal',
             BIG_DEAL_COUNT: 'deck-count-big-deal',
             MARKET_COUNT: 'deck-count-market',
-            DOODAD_COUNT: 'deck-count-doodad'
+            DOODAD_COUNT: 'deck-count-doodad',
+            // 🌟デッキ個別の手動リシャッフルボタン用
+            BTN_RESHUFFLE_SMALL_DEAL: 'btn-reshuffle-small-deal',
+            BTN_RESHUFFLE_BIG_DEAL: 'btn-reshuffle-big-deal',
+            BTN_RESHUFFLE_MARKET: 'btn-reshuffle-market',
+            BTN_RESHUFFLE_DOODAD: 'btn-reshuffle-doodad'
         },
 
         // サイコロ監視エリア
@@ -132,7 +134,7 @@ export const DOM_SELECTORS = {
 
         // 手番プレイヤー手動制御エリア
         TURN_CONTROL: {
-            INPUT_NEXT_ORDER: 'input-next-turn-order',
+            INPUT_NEXT_ORDER: 'input-next-order',
             BTN_SET_TURN: 'btn-set-turn'
         },
 
@@ -154,7 +156,7 @@ export const DOM_SELECTORS = {
 
         // ホスト用盤面モニターID生成用のプレフィックス
         BOARD: {
-            CELL_PREFIX: 'cell-' // 動的に 'cell-0'〜'cell-23' を取得する用
+            CELL_PREFIX: 'cell-' 
         }
     }
 };
