@@ -1,13 +1,14 @@
-// guest_actions.js     (進行・Paycheck・ローン・カード・脱出申請の全アクション一括集約)
+// guest_actions.js      (進行・Paycheck・ローン・カード・脱出申請の全アクション一括集約)
 
 import { roomId } from './config.js';
-// 🌟 supabase.js から購入用RPC関数を追加インポート
+// 🌟 supabase.js から新規作成した passAndEndTurn を追加インポート
 import { 
     updateParticipantState, 
     updateCurrentTurn, 
     updateRoomGameState, 
     drawCard, 
     processFinancialTransaction,
+    passAndEndTurn,
     buyRealEstateAsset,
     buyStockAsset,
     sellStockAsset
@@ -134,7 +135,13 @@ export async function handleDrawCard(deckType, guestDiceResult) {
         
         const result = await drawCard(roomId, guestState.myUserId, deckType);
         
+        // 🌟 新仕様: 山札の枯渇を正確に検知し、待機UIへ移行
         if (!result.success) {
+            if (result.error_code === 'DECK_EMPTY') {
+                alert("山札が枯渇しました。ホストがリシャッフルするまでお待ちください。");
+                guestDiceResult.textContent = `待機中: 山札（${deckType}）のリシャッフルが必要です。`;
+                return;
+            }
             alert(result.error);
             guestDiceResult.textContent = `エラー: ${result.error}`;
             return;
@@ -145,7 +152,6 @@ export async function handleDrawCard(deckType, guestDiceResult) {
             type: deckType,
             title: result.title,
             description: result.description,
-            // 🌟 追加: DBから取得した金額データをキャッシュへ保存
             cost: result.cost,
             down_payment: result.down_payment,
             mortgage: result.mortgage,
@@ -226,10 +232,14 @@ export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResul
             guestState.clearPendingSalary();
         }
 
-        const nextTurnUserId = guestState.getNextTurnUserId();
-        if (nextTurnUserId) {
-            console.log(`【手番移行】次の手番IDを送信します: ${nextTurnUserId}`);
-            await updateCurrentTurn(roomId, nextTurnUserId);
+        // 🌟 新仕様: クライアント側での手動ターン移行を廃止。バックエンドのパス処理へ委譲する
+        const res = await passAndEndTurn(roomId, guestState.myUserId);
+        
+        // サーバー側のバリデーション（Doodad支払い逃れのブロック等）に引っかかった場合
+        if (!res.success) {
+            alert(res.error);
+            btnEndTurn.disabled = false;
+            return;
         }
 
         guestDiceResult.textContent = `手番を終了しました。次のプレイヤーの手番です。`;
@@ -337,13 +347,22 @@ export async function handleCardAction(actionType) {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
         if (actionType === 'pass') {
-            await processFinancialTransaction(roomId, guestState.myUserId, 0, 0, true);
-            alert("パスしました。");
+            // 🌟 新仕様: 単純な 0 円決済ではなく、正規の pass_and_end_turn を呼び出す
+            const res = await passAndEndTurn(roomId, guestState.myUserId);
+            if (!res.success) {
+                alert(res.error);
+                return;
+            }
+            alert("パスしました。手番が次のプレイヤーへ移行します。");
         } 
         else if (actionType === 'pay_doodad') {
-            const cost = currentCard.cost || 0; 
-            await processFinancialTransaction(roomId, guestState.myUserId, -cost, 0, true);
-            alert(`無駄遣い費用 $${cost.toLocaleString()} を支払いました。`);
+            // 🌟 新仕様: 引数による金額指定を廃止。DB側が現在引いているカードから自動計算する
+            const res = await processFinancialTransaction(roomId, guestState.myUserId);
+            if (!res.success) {
+                alert(res.error);
+                return;
+            }
+            alert(`無駄遣いの支払いが完了しました。\n(現在資金: $${res.new_cash})`);
         }
         else if (actionType === 'buy_real_estate') {
             // 不動産の購入
