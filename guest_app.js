@@ -21,7 +21,7 @@ import {
     handleEscapeRatRace,
     handleCardAction,
     handleBankLoanAction,
-    handleDrawCard // 🌟 新規追加: ドロー用アクションをインポート
+    handleDrawCard // ドロー用アクションをインポート
 } from './guest_actions.js';
 
 // DOM_SELECTORS を用いたHTML要素の確実な参照取得
@@ -37,14 +37,14 @@ const guestDiceResult = document.getElementById(SEL_G.CONTROLS.DICE_RESULT);
 const btnClaimPaycheck = document.getElementById(SEL_G.CONTROLS.BTN_CLAIM_PAYCHECK);
 const btnEndTurn = document.getElementById(SEL_G.CONTROLS.BTN_END_TURN);
 
-// 🌟新常設コントロールボタン群の取得
+// 新常設コントロールボタン群の取得
 const btnEscapeRatRace = document.getElementById(SEL_G.CONTROLS.BTN_ESCAPE_RAT_RACE);
 
-// 🌟 山札ドローボタン4種の取得
+// 山札ドローボタン4種の取得
 const btnDrawSmallDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_SMALL_DEAL);
 const btnDrawBigDeal = document.getElementById(SEL_G.CARD.BTN_DRAW_BIG_DEAL);
-const btnDrawMarket = document.getElementById(SEL_G.CARD.BTN_DRAW_MARKET); // 🌟 追加
-const btnDrawDoodad = document.getElementById(SEL_G.CARD.BTN_DRAW_DOODAD); // 🌟 追加
+const btnDrawMarket = document.getElementById(SEL_G.CARD.BTN_DRAW_MARKET); 
+const btnDrawDoodad = document.getElementById(SEL_G.CARD.BTN_DRAW_DOODAD); 
 
 const btnBuyRealEstate = document.getElementById(SEL_G.CARD.BTN_BUY_REALESTATE);
 const btnBuyStock = document.getElementById(SEL_G.CARD.BTN_BUY_STOCK);
@@ -160,7 +160,7 @@ function startMonitoring(myUserId) {
             btnRollDice.disabled = true;
         }
 
-        // 🌟 取引・ローン・脱出申請ボタン等のdisabled制御を表示モジュール側へ一括集約
+        // 取引・ローン・脱出申請ボタン等のdisabled制御を表示モジュール側へ一括集約
         refreshGuestUI(
             guestState.latestParticipants,
             guestState.currentTurnUserIdCache,
@@ -208,7 +208,7 @@ function startMonitoring(myUserId) {
         handleEscapeRatRace(btnEscapeRatRace);
     });
 
-    // 🌟 共通：ドローボタンを全て無効化する関数
+    // 共通：ドローボタンを全て無効化する関数
     const disableAllDrawButtons = () => {
         if(btnDrawSmallDeal) btnDrawSmallDeal.disabled = true;
         if(btnDrawBigDeal) btnDrawBigDeal.disabled = true;
@@ -231,7 +231,6 @@ function startMonitoring(myUserId) {
         });
     }
 
-    // 🌟 追加: Market を引く
     if (btnDrawMarket) {
         btnDrawMarket.addEventListener('click', () => {
             disableAllDrawButtons();
@@ -239,7 +238,6 @@ function startMonitoring(myUserId) {
         });
     }
 
-    // 🌟 追加: Doodad を引く
     if (btnDrawDoodad) {
         btnDrawDoodad.addEventListener('click', () => {
             disableAllDrawButtons();
@@ -250,7 +248,8 @@ function startMonitoring(myUserId) {
     // カード意思決定アクションボタン群
     btnBuyRealEstate.addEventListener('click', () => handleCardAction('buy_real_estate'));
     btnBuyStock.addEventListener('click', () => handleCardAction('buy_stock'));
-    btnSellStock.addEventListener('click', () => handleCardAction('sell_asset'));
+    // 🌟 修正: 'sell_asset' -> 'sell_stock' に変更し、guest_actions.js と一致させる
+    btnSellStock.addEventListener('click', () => handleCardAction('sell_stock'));
     btnPayDoodad.addEventListener('click', () => handleCardAction('pay_doodad'));
     btnCardPass.addEventListener('click', () => handleCardAction('pass'));
 
@@ -268,16 +267,14 @@ function startMonitoring(myUserId) {
     subscribeToRoom(roomId, (currentTurnUserId, fullRoomData) => {
         guestState.setCurrentTurnUserId(currentTurnUserId);
         
-        // 🌟 部屋データの状態（waiting / playing）を抽出し、状態管理へセット
+        // 部屋データの状態（waiting / playing）を抽出し、状態管理へセット
         if (fullRoomData) {
             if (fullRoomData.game_state) {
                 guestState.currentCardCache = fullRoomData.game_state.current_card;
             }
-            // roomsテーブルから受け取ったステータス文字列（waiting or playing）をキャッシュ
             if (fullRoomData.game_state && fullRoomData.game_state.status) {
                 guestState.setRoomStatus(fullRoomData.game_state.status);
             } else if (fullRoomData.status) {
-                // game_stateの外側にstatusが配置されているスキーマ設計の場合のフォールバック
                 guestState.setRoomStatus(fullRoomData.status);
             }
         }
