@@ -2,32 +2,38 @@
 
 // 必要な部品を各ファイルからインポート
 import { roomId } from './config.js';
-// 【修正】コメントを実態（insertParticipant）に合わせて整理しました。supabaseクライアント自体もインポートに追加。
-import { supabase, subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant } from './supabase.js';
-// ★ renderDeckCounts を追加インポート
-import { renderTurnDisplay, renderParticipantDisplay, renderDeckCounts } from './host_disp.js'; // 表示用ファイルをインポート
+// 🌟【追加】 manualReshuffleDeck をインポートに追加
+import { supabase, subscribeToParticipants, clearRoomParticipants, subscribeToRoom, updateCurrentTurn, deleteParticipant, manualReshuffleDeck } from './supabase.js';
+// DOMセレクターをインポート
+import { DOM_SELECTORS } from './dom_selectors.js';
+import { renderTurnDisplay, renderParticipantDisplay, renderDeckCounts } from './host_disp.js'; 
 
 // ====== 新規追加：ホスト用ID ======
 const HOST_USER_ID = 'host-admin-01';
 // ===================================
 
 // 1. HTMLの各画面エリア・ボタン・入力欄をプログラムに覚えさせる
-const listBody = document.getElementById('host-participant-list');
-const btnClearRoom = document.getElementById('btn-clear-room');
-const hostDiceMonitor = document.getElementById('host-dice-monitor');
-// 【追加1】ステータス表示用の要素を取得
-const displayRoomStatus = document.getElementById('host-room-status');
+const listBody = document.getElementById(DOM_SELECTORS.HOST.PARTICIPANT_LIST);
+const btnClearRoom = document.getElementById(DOM_SELECTORS.HOST.KICK_CONTROL.BTN_CLEAR_ROOM);
+const hostDiceMonitor = document.getElementById(DOM_SELECTORS.HOST.DICE_MONITOR);
+const displayRoomStatus = document.getElementById(DOM_SELECTORS.HOST.LIFECYCLE.DISPLAY_ROOM_STATUS);
 
 // 手番設定用の入力欄（入室順）とボタン
-const inputNextTurnOrder = document.getElementById('input-next-turn-order');
-const btnSetTurn = document.getElementById('btn-set-turn');
+const inputNextTurnOrder = document.getElementById(DOM_SELECTORS.HOST.TURN_CONTROL.INPUT_NEXT_ORDER);
+const btnSetTurn = document.getElementById(DOM_SELECTORS.HOST.TURN_CONTROL.BTN_SET_TURN);
 
 // 「🎲 初期シャッフル＆ゲーム開始」ボタン
-const btnInitialShuffleStart = document.getElementById('btn-initial-shuffle-start');
+const btnInitialShuffleStart = document.getElementById(DOM_SELECTORS.HOST.LIFECYCLE.BTN_INITIAL_SHUFFLE);
+
+// 🌟【新設】 デッキ個別リシャッフルボタンの取得
+const btnReshuffleSmallDeal = document.getElementById(DOM_SELECTORS.HOST.DECK_MONITOR.BTN_RESHUFFLE_SMALL_DEAL);
+const btnReshuffleBigDeal = document.getElementById(DOM_SELECTORS.HOST.DECK_MONITOR.BTN_RESHUFFLE_BIG_DEAL);
+const btnReshuffleMarket = document.getElementById(DOM_SELECTORS.HOST.DECK_MONITOR.BTN_RESHUFFLE_MARKET);
+const btnReshuffleDoodad = document.getElementById(DOM_SELECTORS.HOST.DECK_MONITOR.BTN_RESHUFFLE_DOODAD);
 
 // 退室管理用の要素
-const btnKickParticipant = document.getElementById('btn-kick-participant');
-const inputKickOrder = document.getElementById('input-kick-order');
+const btnKickParticipant = document.getElementById(DOM_SELECTORS.HOST.KICK_CONTROL.BTN_KICK_PARTICIPANT);
+const inputKickOrder = document.getElementById(DOM_SELECTORS.HOST.KICK_CONTROL.INPUT_KICK_ORDER);
 
 // キャッシュ用の変数
 let latestParticipants = [];
@@ -40,19 +46,15 @@ const updateTurnDisplay = () => {
 
 // 2. データを画面のテーブル（tbody）およびすごろく盤面に組み立てて出力する関数
 const updateParticipantTable = (participants) => {
-    latestParticipants = participants; // キャッシュを更新
+    latestParticipants = participants; 
     
-    // 分離した外部ファイルの描画関数を実行
     renderParticipantDisplay(participants, listBody);
-
-    // 参加者情報が更新されたら手番表示も再計算する
     updateTurnDisplay();
 };
 
-// ====== 🌟修正版：ページロード時のルーム状態初期フェッチ関数 ======
+// ====== 🌟ページロード時のルーム状態初期フェッチ関数 ======
 const fetchInitialRoomState = async () => {
     try {
-        // 修正：存在しない 'status' カラムの取得を削除
         const { data, error } = await supabase
             .from('rooms')
             .select('game_state, current_turn_user_id')
@@ -66,11 +68,8 @@ const fetchInitialRoomState = async () => {
 
         if (data) {
             currentTurnUserIdCache = data.current_turn_user_id;
-
-            // 修正：game_state のデータ有無でゲーム進行中かを判定する
             const isPlaying = data.game_state !== null && Object.keys(data.game_state).length > 0;
 
-            // ステータスとボタンのUI復元
             if (displayRoomStatus) {
                 if (isPlaying) {
                     displayRoomStatus.textContent = 'playing (ゲーム進行中)';
@@ -87,7 +86,6 @@ const fetchInitialRoomState = async () => {
                 }
             }
 
-            // 山札データのUI復元
             if (data.game_state) {
                 renderDeckCounts(data.game_state);
             }
@@ -98,39 +96,31 @@ const fetchInitialRoomState = async () => {
         console.error("初期ルーム状態フェッチ例外:", err);
     }
 };
-// =========================================================================
 
-// ====== 新規追加：初期シャッフル＆ゲーム開始 ======
+// ====== 初期シャッフル＆ゲーム開始 ======
 if (btnInitialShuffleStart) {
     btnInitialShuffleStart.addEventListener('click', async () => {
         if (!confirm("初期シャッフルを行ってゲームを開始しますか？")) return;
 
         try {
-            // 一旦ボタンを無効化
             btnInitialShuffleStart.disabled = true;
             btnInitialShuffleStart.textContent = '処理中...';
 
-            // データベースの start_game_with_shuffled_decks 関数を呼び出す
             const { data, error } = await supabase.rpc('start_game_with_shuffled_decks', {
                 p_room_id: roomId,
                 p_host_user_id: HOST_USER_ID
             });
 
-            if (error) {
-                throw error; // 下のcatchブロックへ処理を移す
-            }
+            if (error) throw error; 
 
             if (data.success) {
                 alert(data.message);
-                // 【変更】成功時はボタンを無効化したままにし、文字を変える
                 btnInitialShuffleStart.textContent = 'ゲーム開始済み';
                 
-                // 【追加2・修正】HTML側の固定文字との重複を防ぐため、状態の文字列のみをセットする
                 if (displayRoomStatus) {
                     displayRoomStatus.textContent = 'playing (ゲーム進行中)';
                 }
 
-                // 🌟【新規追加】初期シャッフル直後に最新データを再フェッチし、山札の残り枚数を即時反映
                 const { data: roomData, error: roomError } = await supabase
                     .from('rooms')
                     .select('game_state, current_turn_user_id')
@@ -145,14 +135,12 @@ if (btnInitialShuffleStart) {
 
             } else {
                 alert("エラー: " + data.error);
-                // エラー時はボタンを元に戻す
                 btnInitialShuffleStart.disabled = false;
                 btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
             }
         } catch (err) {
             console.error("エラー:", err);
             alert("エラーが発生しました。通信状態を確認してください。");
-            // エラー時はボタンを元に戻す
             btnInitialShuffleStart.disabled = false;
             btnInitialShuffleStart.textContent = '🎲 初期シャッフル＆ゲーム開始';
         }
@@ -160,7 +148,42 @@ if (btnInitialShuffleStart) {
 }
 // ===============================================
 
-// 3.「を手番にする」ボタンが押された時の動き（配列インデックスから特定）
+// ====== 🌟【新設】デッキ個別 手動リシャッフルイベント群 ======
+const setupReshuffleEvent = (btnElement, deckType, label) => {
+    if (!btnElement) return;
+    
+    btnElement.addEventListener('click', async () => {
+        if (!confirm(`【${label}】の捨て札を回収し、シャッフルして山札に戻します。よろしいですか？`)) return;
+
+        try {
+            btnElement.disabled = true;
+            btnElement.textContent = '🔄 処理中...';
+
+            const result = await manualReshuffleDeck(roomId, HOST_USER_ID, deckType);
+            
+            if (result.success) {
+                alert(`✅ リシャッフル完了\n【${label}】の山札が再構築されました（${result.new_deck_count}枚）`);
+            } else {
+                alert(`⚠️ エラー: ${result.error}`);
+            }
+        } catch (error) {
+            console.error(`リシャッフルエラー (${deckType}):`, error);
+            alert(`通信エラーが発生しました。`);
+        } finally {
+            btnElement.disabled = false;
+            btnElement.textContent = '🔄 リシャッフル';
+        }
+    });
+};
+
+// 各ボタンに対してイベントを設定
+setupReshuffleEvent(btnReshuffleSmallDeal, 'small_deal', 'Small Deal (好機:小)');
+setupReshuffleEvent(btnReshuffleBigDeal, 'big_deal', 'Big Deal (好機:大)');
+setupReshuffleEvent(btnReshuffleMarket, 'market', 'Market (市場)');
+setupReshuffleEvent(btnReshuffleDoodad, 'doodad', 'Doodad (無駄遣い)');
+// ===============================================
+
+// 3.「を手番にする」ボタンが押された時の動き
 if (btnSetTurn) {
     btnSetTurn.addEventListener('click', async () => {
         const orderValue = parseInt(inputNextTurnOrder.value, 10);
@@ -178,7 +201,7 @@ if (btnSetTurn) {
             
             await updateCurrentTurn(roomId, targetPlayer.user_id);
             
-            inputNextTurnOrder.value = ''; // 入力欄をクリア
+            inputNextTurnOrder.value = ''; 
         } catch (error) {
             alert('手番の設定に失敗しました。');
         } finally {
@@ -191,29 +214,26 @@ if (btnSetTurn) {
 // 4. リアルタイム監視を開始
 console.log("【デバッグ】ホスト画面用のリアルタイム接続を開始します。部屋ID:", roomId);
 
-// 🌟【追加】ページ起動時に一度サーバーから最新状態を必ず取得して適用
+// ページ起動時に一度サーバーから最新状態を必ず取得して適用
 fetchInitialRoomState();
 
 subscribeToParticipants(roomId, updateParticipantTable);
 
 // 部屋（手番情報・ゲーム状態）の変更をリアルタイム監視
-// ★ 引数を部屋オブジェクト全体、あるいは必要データを受け取れる形式に適合
 subscribeToRoom(roomId, (roomData) => {
     if (roomData && typeof roomData === 'object') {
         console.log("【ホストDB3】subscribeToRoomを受信しました。データオブジェクト:", roomData);
         currentTurnUserIdCache = roomData.current_turn_user_id;
         
-        // 🌟 リアルタイム更新時にも残り枚数描画関数を実行
         renderDeckCounts(roomData.game_state);
     } else {
-        // 引数が単一のID文字列（互換性フォールバック）だった場合
         console.log("【ホストDB3】subscribeToRoomを受信しました。currentTurnUserId:", roomData);
         currentTurnUserIdCache = roomData;
     }
-    updateTurnDisplay(); // 表示を更新
+    updateTurnDisplay(); 
 });
 
-// 5. 部屋データのリセットボタン（全員を退室させる）が押された時の動き
+// 5. 部屋データのリセットボタン
 if (btnClearRoom) {
     btnClearRoom.addEventListener('click', async () => {
         if (!confirm('本当にこの部屋の参加者データをすべてリセットしますか？')) {
@@ -258,7 +278,7 @@ if (btnKickParticipant && inputKickOrder) {
 
             await deleteParticipant(roomId, targetPlayer.user_id);
             
-            inputKickOrder.value = ''; // 入力欄をクリア
+            inputKickOrder.value = ''; 
         } catch (error) {
             alert('退室処理に失敗しました。');
         } finally {
