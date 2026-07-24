@@ -221,16 +221,10 @@ subscribeToParticipants(roomId, updateParticipantTable);
 
 // 部屋（手番情報・ゲーム状態）の変更をリアルタイム監視
 subscribeToRoom(roomId, (roomData) => {
-    if (roomData && typeof roomData === 'object') {
-        console.log("【ホストDB3】subscribeToRoomを受信しました。データオブジェクト:", roomData);
-        currentTurnUserIdCache = roomData.current_turn_user_id;
-        
-        renderDeckCounts(roomData.game_state);
-    } else {
-        console.log("【ホストDB3】subscribeToRoomを受信しました。currentTurnUserId:", roomData);
-        currentTurnUserIdCache = roomData;
-    }
-    updateTurnDisplay(); 
+    console.log("【ホストDB3】roomsテーブルの更新通知を受信しました。最新状態を再取得します。");
+    // 通知が来たら、手番文字列かオブジェクトかに依存せず、
+    // 確実にDBから最新の game_state を取ってきて再描画する関数を呼ぶ
+    fetchInitialRoomState(); 
 });
 
 // 5. 部屋データのリセットボタン
