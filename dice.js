@@ -14,6 +14,7 @@ export function rollDice() {
  * @param {number} diceRoll - サイコロの出目 (1〜6)
  * @returns {number} 移動後のマス目の番号 (0〜23)
  */
+
 export function calculateNextPosition(currentPosition, diceRoll) {
     // 0〜23マスのループ構造。合計が24以上なら24で割った余り（0〜23）にする
     return (currentPosition + diceRoll) % 24;
@@ -23,7 +24,6 @@ export function calculateNextPosition(currentPosition, diceRoll) {
  * サイコロの出目（数値）に対応する文字列表現を返す関数（表示用）
  * @param {number} diceRoll - サイコロの出目 (1〜6)
  * @returns {string} ⚀ (1) 〜 ⚅ (6) の文字列
- */
 export function getDiceFaceText(diceRoll) {
     const diceFaces = ['⚀ (1)', '⚁ (2)', '⚂ (3)', '⚃ (4)', '⚄ (5)', '⚅ (6)'];
     if (diceRoll >= 1 && diceRoll <= 6) {
@@ -31,3 +31,5 @@ export function getDiceFaceText(diceRoll) {
     }
     return 'まだ振っていません';
 }
+*/
+
