@@ -1,0 +1,162 @@
+{
+  "title": "Cashflow Game State Data Dictionary",
+  "version": "1.0",
+  "description": "データベースおよびクライアント間でやり取りされるJSONBデータ、および重要カラムの絶対的な用途定義。変数の推測による流用を防止するための辞書。",
+  "tables": {
+    "rooms": {
+      "description": "部屋全体のゲーム状態や、手番の管理を行うためのテーブル",
+      "columns": [
+        {
+          "name": "id",
+          "type": "Text",
+          "description": "部屋の一意なID"
+        },
+        {
+          "name": "created_at",
+          "type": "Timestamp",
+          "description": "部屋の作成日時"
+        },
+        {
+          "name": "current_turn_user_id",
+          "type": "Text",
+          "description": "現在手番を実行中のプレイヤーのユーザーID",
+          "warning": "手番の判定は必ずこのカラムの値を使用すること。配列インデックスや盤面位置で計算してはならない。"
+        },
+        {
+          "name": "win_condition_mode",
+          "type": "Text",
+          "description": "勝利条件の設定 (standard または double)"
+        }
+      ],
+      "jsonb_columns": {
+        "game_state": {
+          "description": "部屋内で共有される山札や、現在場に出ているカードの状態",
+          "keys": [
+            {
+              "path": "status",
+              "type": "String",
+              "description": "ゲームの進行ステータス (waiting, playing, ended のみ)"
+            },
+            {
+              "path": "decks",
+              "type": "Object",
+              "description": "4種類の山札（未ドローのカードID配列）。シャッフル済みの配列として保持"
+            },
+            {
+              "path": "graveyard",
+              "type": "Object",
+              "description": "4種類の捨て札（使用済みカードID配列）。リシャッフル時にここから回収"
+            },
+            {
+              "path": "current_card",
+              "type": ["Object", "Null"],
+              "description": "現在誰かが引いて、処理待ち状態のカード情報。誰も引いていない場合は null"
+            },
+            {
+              "path": "current_card.status",
+              "type": "String",
+              "description": "引いたカードの処理状況 (active または completed)"
+            }
+          ]
+        }
+      }
+    },
+    "participants": {
+      "description": "プレイヤーの盤面上の位置、フラグ、および財務諸表（PL/BS）を管理するテーブル",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "Text",
+          "description": "プレイヤーの一意なID",
+          "warning": "rooms.current_turn_user_id と照合して手番を判定する。"
+        },
+        {
+          "name": "created_at",
+          "type": "Timestamp",
+          "description": "プレイヤーが入室した日時",
+          "warning": "次手番のプレイヤーを決定する際の「順番」として使用する。"
+        }
+      ],
+      "jsonb_columns": {
+        "state": {
+          "description": "プレイヤーの盤面ステータスおよび財務状況",
+          "keys": [
+            {
+              "path": "role",
+              "type": "String",
+              "description": "部屋における権限 (host または general)"
+            },
+            {
+              "path": "game_phase",
+              "type": "String",
+              "description": "プレイヤーが居るトラック (rat_race または fast_track)"
+            },
+            {
+              "path": "position",
+              "type": "Number",
+              "description": "盤面（ボード）上のコマの現在位置",
+              "warning": "マスのインデックス(0〜23)。手番の順番判定には絶対に使用しないこと。"
+            },
+            {
+              "path": "last_dice",
+              "type": "Number",
+              "description": "直近で振ったサイコロの合計値 (0〜12)"
+            },
+            {
+              "path": "is_calculating",
+              "type": "Boolean",
+              "description": "アクション中（行動ロック）フラグ。true の場合、サイコロや手番終了をロック"
+            },
+            {
+              "path": "calculation_phase",
+              "type": "String",
+              "description": "現在要求されているアクションの種類 (payday, deal, none 等)"
+            },
+            {
+              "path": "financials.cash",
+              "type": "Number",
+              "description": "手元資金（キャッシュ）の絶対値。買い物や支払いで直接増減する"
+            },
+            {
+              "path": "financials.passive_income",
+              "type": "Number",
+              "description": "不労所得の合計額。勝利判定の基準値"
+            },
+            {
+              "path": "financials.total_expenses",
+              "type": "Number",
+              "description": "総支出。勝利判定の目標値計算に使用"
+            },
+            {
+              "path": "financials.net_cash_flow",
+              "type": "Number",
+              "description": "毎月のキャッシュフロー純額 (total_income - total_expenses)"
+            },
+            {
+              "path": "financials.liabilities.bank_loan",
+              "type": "Number",
+              "description": "手動で借り入れた銀行ローン残高。1,000ドル単位"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "development_rules": [
+    {
+      "rule_id": 1,
+      "title": "「順番」と「位置」の分離",
+      "description": "手番を回す順番は participants.created_at（入室順）で判定し、盤面上のマスの位置は state->'position' を使用する。用途の流用禁止。"
+    },
+    {
+      "rule_id": 2,
+      "title": "RPCでの単一責任の原則",
+      "description": "次手番の計算などのシステムクリティカルな処理は、フロントエンド側で計算せずデータベース内のRPCで完結させること。"
+    },
+    {
+      "rule_id": 3,
+      "title": "新規変数の追加時",
+      "description": "JSONB内に新しいキーを追加する場合は、必ずこのデータ辞書に「用途と型」を追記し、チームで共有してから実装すること。"
+    }
+  ]
+}
