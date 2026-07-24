@@ -1,8 +1,4 @@
-// guest_app.js
-
-/**
- * My Game - ゲスト画面 司令塔プログラム
- */
+// index_app.js My Game - ゲスト画面 司令塔プログラム
 
 import { roomId } from './config.js';
 import { getFromStorage } from './storage.js';
@@ -10,9 +6,8 @@ import { subscribeToRoom, subscribeToParticipants, updateParticipantState } from
 import { autoLoginCheck, executeJoin } from './join_guest.js';
 import { refreshGuestUI } from './guest_disp.js';
 import { DOM_SELECTORS } from './dom_selectors.js';
-
-// 分割したカスタムモジュールから状態とアクションをインポート
 import { guestState } from './guest_state.js';
+
 // 追加アクションハンドラー（脱出申請、カード、ローン）をインポート
 import { 
     handleRollDice, 
@@ -24,9 +19,7 @@ import {
     handleDrawCard // ドロー用アクションをインポート
 } from './guest_actions.js';
 
-// DOM_SELECTORS を用いたHTML要素の確実な参照取得
 const SEL_G = DOM_SELECTORS.GUEST;
-
 const sectionLogin = document.getElementById(SEL_G.LOGIN.SECTION);
 const sectionGuest = document.getElementById(SEL_G.STATUS.SECTION);
 const inputUsername = document.getElementById(SEL_G.LOGIN.INPUT_USERNAME);
@@ -153,13 +146,16 @@ function startMonitoring(myUserId) {
             updateStatusProfessionUI(myData.state);
         }
 
+
         // 🌟 サイコロボタンの活性制御：自分の手番、かつ財務ロックがなく、未請求給与がなく、終了ボタンが押されていない、かつ「ゲームがプレイ状態（開始済み）」であること
         if (isMyTurn && !isFinancialsLocked && pending === 0 && btnEndTurn.disabled && guestState.isGameStarted()) {
             btnRollDice.disabled = false;
+            btnRollDice.textContent = 'O サイコロを振る'; // ← 追加：アクティブな時の文字列
         } else {
             btnRollDice.disabled = true;
+            btnRollDice.textContent = 'X サイコロを振る'; // ← 追加：非アクティブな時の文字列
         }
-
+        
         // 取引・ローン・脱出申請ボタン等のdisabled制御を表示モジュール側へ一括集約
         refreshGuestUI(
             guestState.latestParticipants,
@@ -280,4 +276,6 @@ function startMonitoring(myUserId) {
         }
         triggerUIRefresh();
     });
+
+    
 }
