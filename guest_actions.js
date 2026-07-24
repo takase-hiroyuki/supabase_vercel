@@ -222,6 +222,9 @@ export async function handleClaimPaycheck(btnClaimPaycheck, guestDiceResult) {
 export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResult) {
     if (!guestState.isGameStarted()) return;
 
+    // 🔍 【ログ追加】関数呼び出し確認
+    console.log(`[DEBUG] handleEndTurn が呼び出されました。 userId: ${guestState.myUserId}, roomId: ${roomId}`);
+
     try {
         btnEndTurn.disabled = true;
         btnClaimPaycheck.disabled = true;
@@ -233,18 +236,28 @@ export async function handleEndTurn(btnEndTurn, btnClaimPaycheck, guestDiceResul
         }
 
         // 🌟 新仕様: クライアント側での手動ターン移行を廃止。バックエンドのパス処理へ委譲する
+        // 🔍 【ログ追加】RPC呼び出し前
+        console.log(`[DEBUG] passAndEndTurn を実行します...`);
         const res = await passAndEndTurn(roomId, guestState.myUserId);
+        // 🔍 【ログ追加】RPCレスポンス確認
+        console.log(`[DEBUG] passAndEndTurn からのレスポンス:`, res);
         
         // サーバー側のバリデーション（Doodad支払い逃れのブロック等）に引っかかった場合
         if (!res.success) {
+            // 🔍 【ログ追加】エラー分岐確認
+            console.warn(`[DEBUG] passAndEndTurn がエラーを返しました:`, res.error);
             alert(res.error);
             btnEndTurn.disabled = false;
             return;
         }
 
+        // 🔍 【ログ追加】成功分岐確認
+        console.log(`[DEBUG] passAndEndTurn 成功。UIを更新します。`);
         guestDiceResult.textContent = `手番を終了しました。次のプレイヤーの手番です。`;
 
     } catch (error) {
+        // 🔍 【ログ追加】例外エラー確認
+        console.error(`[DEBUG] handleEndTurn 処理中に例外が発生しました:`, error);
         alert('手番の終了処理に失敗しました。');
         btnEndTurn.disabled = false;
     }
@@ -347,9 +360,18 @@ export async function handleCardAction(actionType) {
         console.log(`【カードアクション実行】タイプ: ${actionType}`);
 
         if (actionType === 'pass') {
+            // 🔍 【ログ追加】カードアクションのパス処理確認
+            console.log(`[DEBUG] カードアクション 'pass' が選択されました。`);
+            
             // 🌟 新仕様: 単純な 0 円決済ではなく、正規の pass_and_end_turn を呼び出す
             const res = await passAndEndTurn(roomId, guestState.myUserId);
+            
+            // 🔍 【ログ追加】RPCレスポンス確認
+            console.log(`[DEBUG] passAndEndTurn からのレスポンス (カードパス時):`, res);
+            
             if (!res.success) {
+                // 🔍 【ログ追加】エラー分岐確認
+                console.warn(`[DEBUG] passAndEndTurn (カードパス時) がエラーを返しました:`, res.error);
                 alert(res.error);
                 return;
             }
